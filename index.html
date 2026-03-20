@@ -17,7 +17,8 @@
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;
-    min-height:100vh;min-height:100dvh;display:flex;justify-content:center;overflow:hidden}
+    min-height:100vh;min-height:100dvh;display:flex;justify-content:center;
+    overflow-x:hidden;overflow-y:auto}
   body::before{content:'';position:fixed;inset:0;z-index:0;
     background:
       radial-gradient(ellipse 60% 50% at 20% 10%,rgba(241,99,52,.1) 0%,transparent 70%),
@@ -27,12 +28,10 @@
     display:flex;flex-direction:column;
     height:100vh;height:100dvh} /* dvh = excluye barra del navegador en móvil */
 
-  /* ── API KEY FLOATING PANEL ── */
+  /* ── API KEY ACCESS (al final de la página) ── */
   #key-toggle{
-    position:fixed;
-    right:14px;
-    bottom:calc(14px + env(safe-area-inset-bottom));
-    z-index:20;
+    display:block;
+    margin:120vh auto 20px; /* obliga a desplazarse bastante para verlo */
     border:none;
     border-radius:999px;
     padding:10px 14px;
@@ -231,7 +230,7 @@
   /* ── MOBILE ≤ 480px (S22 Ultra = ~412px CSS width) ── */
   @media (max-width:480px){
     /* Panel API: compacto en móvil */
-    #key-toggle{right:10px;bottom:calc(10px + env(safe-area-inset-bottom));padding:9px 12px;font-size:.7rem}
+    #key-toggle{margin:140vh auto 18px;padding:9px 12px;font-size:.7rem}
     #key-panel{bottom:calc(56px + env(safe-area-inset-bottom));padding:10px}
     #key-panel label,.key-link{display:none}
 
@@ -615,9 +614,9 @@ function createStreamBubble() {
   // Scroll hasta el inicio de la burbuja
   w.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-  // Pequeño salto hacia abajo para mejorar lectura de primeros renglones
+  // Salto más grande para mejorar lectura de primeros renglones
   setTimeout(() => {
-    chatDiv.scrollBy({ top: 28, behavior: 'smooth' });
+    chatDiv.scrollBy({ top: 140, behavior: 'smooth' });
   }, 120);
 
   return b;
