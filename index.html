@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Traductor ✦ Groq</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root {
+    --bg:#0a0c14; --surface2:#181c2e;
+    --border:rgba(241,99,52,0.18); --accent:#f16334;
+    --accent2:#fb923c; --gold:#e8c97a;
+    --text:#e8e9f3; --muted:#7a7f9e;
+    --bubble-user:linear-gradient(135deg,#c2410c,#f16334);
+    --bubble-ai:#181c2e;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;
+    min-height:100vh;display:flex;justify-content:center;overflow:hidden}
+  body::before{content:'';position:fixed;inset:0;z-index:0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 10%,rgba(241,99,52,.1) 0%,transparent 70%),
+      radial-gradient(ellipse 50% 40% at 80% 90%,rgba(251,146,60,.07) 0%,transparent 70%);
+    pointer-events:none}
+  .app{position:relative;z-index:1;width:100%;max-width:680px;
+    display:flex;flex-direction:column;height:100vh}
+
+  /* ── API KEY PANEL ── */
+  #key-panel{
+    padding:12px 20px;
+    background:rgba(241,99,52,.07);
+    border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:10px;
+    flex-shrink:0;
+  }
+  #key-panel label{font-size:.72rem;color:var(--muted);white-space:nowrap}
+  #apiKeyInput{
+    flex:1;background:var(--surface2);border:1px solid var(--border);
+    border-radius:10px;padding:7px 14px;color:var(--text);
+    font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;
+    transition:border-color .2s;
+  }
+  #apiKeyInput:focus{border-color:var(--accent)}
+  #apiKeyInput::placeholder{color:var(--muted)}
+  .key-link{font-size:.7rem;color:var(--accent2);text-decoration:none;white-space:nowrap}
+  .key-link:hover{text-decoration:underline}
+  .key-status{font-size:18px;flex-shrink:0;transition:all .3s}
+
+  /* ── HEADER ── */
+  header{padding:13px 20px;background:rgba(10,12,20,.9);backdrop-filter:blur(20px);
+    border-bottom:1px solid var(--border);display:flex;align-items:center;
+    justify-content:space-between;gap:10px;flex-shrink:0}
+  .header-brand{display:flex;align-items:center;gap:12px}
+  .logo{width:42px;height:42px;border-radius:13px;
+    background:linear-gradient(135deg,#c2410c,#fb923c);
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;flex-shrink:0;box-shadow:0 4px 18px rgba(241,99,52,.35)}
+  .brand-text h1{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;
+    background:linear-gradient(90deg,#e8e9f3,#fb923c);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .brand-text p{font-size:.67rem;color:var(--muted);letter-spacing:.05em}
+  .header-controls{display:flex;gap:7px}
+  .select-wrap{position:relative}
+  .select-wrap::after{content:'▾';position:absolute;right:9px;top:50%;
+    transform:translateY(-50%);color:var(--muted);font-size:10px;pointer-events:none}
+  select{appearance:none;background:var(--surface2);color:var(--text);
+    border:1px solid var(--border);border-radius:10px;padding:7px 26px 7px 11px;
+    font-family:'DM Sans',sans-serif;font-size:.7rem;cursor:pointer;outline:none;
+    transition:border-color .2s}
+  select:hover{border-color:var(--accent)}
+
+  /* ── CHAT ── */
+  #chat{flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;gap:18px;
+    scrollbar-width:thin;scrollbar-color:#2a2f4a transparent}
+  #chat::-webkit-scrollbar{width:4px}
+  #chat::-webkit-scrollbar-thumb{background:#2a2f4a;border-radius:99px}
+
+  .msg{display:flex;align-items:flex-end;gap:9px;animation:fadeUp .3s ease both}
+  .msg.user{flex-direction:row-reverse}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .avatar{width:30px;height:30px;border-radius:9px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:14px}
+  .avatar.ai{background:linear-gradient(135deg,#7c2d12,#f16334)}
+  .avatar.usr{background:linear-gradient(135deg,#f16334,#fb923c)}
+  .bubble{max-width:88%;padding:13px 17px;border-radius:20px;
+    font-size:.87rem;line-height:1.65;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+  .bubble.ai{background:var(--bubble-ai);border:1px solid var(--border);border-bottom-left-radius:5px}
+  .bubble.user{background:var(--bubble-user);border-bottom-right-radius:5px;color:#fff}
+
+  .bubble.ai h1,.bubble.ai h2,.bubble.ai h3{font-family:'Playfair Display',serif;
+    color:#ffd0b5;margin:14px 0 5px;font-size:.93rem}
+  .bubble.ai h3:first-child{margin-top:0}
+  .bubble.ai strong{color:var(--gold);font-weight:600}
+  .bubble.ai em{color:#e2b89e}
+  .bubble.ai hr{border:none;border-top:1px solid var(--border);margin:13px 0}
+  .bubble.ai p{margin:5px 0}
+  .bubble.ai ul,.bubble.ai ol{padding-left:18px;margin:5px 0}
+  .bubble.ai li{margin:3px 0}
+  .bubble.ai code{background:rgba(241,99,52,.12);border:1px solid var(--border);
+    border-radius:5px;padding:1px 6px;font-size:.81rem;font-family:monospace;color:#fbb388}
+  .bubble.ai blockquote{border-left:3px solid var(--accent);
+    padding-left:12px;color:var(--muted);margin:7px 0;font-style:italic}
+
+  .streaming-cursor::after{content:'▋';color:var(--accent2);animation:blink .7s steps(1) infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+  .typing-wrap{display:flex;align-items:center;gap:5px;padding:13px 17px}
+  .typing-wrap span{width:7px;height:7px;border-radius:50%;
+    background:var(--accent);opacity:.5;animation:bounce 1.1s infinite ease}
+  .typing-wrap span:nth-child(2){animation-delay:.16s}
+  .typing-wrap span:nth-child(3){animation-delay:.32s}
+  @keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-7px);opacity:1}}
+
+  /* ── FOOTER ── */
+  footer{padding:12px 16px 16px;background:rgba(10,12,20,.92);
+    backdrop-filter:blur(20px);border-top:1px solid var(--border);flex-shrink:0}
+  .input-row{display:flex;gap:9px;align-items:flex-end}
+  textarea{flex:1;resize:none;min-height:46px;max-height:120px;
+    background:var(--surface2);border:1px solid var(--border);border-radius:15px;
+    padding:12px 16px;color:var(--text);font-family:'DM Sans',sans-serif;
+    font-size:.88rem;line-height:1.5;outline:none;overflow-y:auto;
+    transition:border-color .2s,box-shadow .2s}
+  textarea::placeholder{color:var(--muted)}
+  textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(241,99,52,.14)}
+  .send-btn{width:46px;height:46px;border-radius:13px;flex-shrink:0;
+    background:linear-gradient(135deg,#c2410c,#f16334);border:none;cursor:pointer;color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:19px;
+    box-shadow:0 4px 16px rgba(241,99,52,.4);transition:transform .15s,box-shadow .15s,opacity .15s}
+  .send-btn:hover:not(:disabled){transform:scale(1.07);box-shadow:0 6px 22px rgba(241,99,52,.55)}
+  .send-btn:active:not(:disabled){transform:scale(.95)}
+  .send-btn:disabled{opacity:.35;cursor:not-allowed}
+  .footer-meta{display:flex;justify-content:space-between;align-items:center;margin-top:9px}
+  .hint{font-size:.67rem;color:var(--muted)}
+  .clear-btn{background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;
+    font-size:.7rem;cursor:pointer;padding:4px 8px;border-radius:8px;transition:color .2s,background .2s}
+  .clear-btn:hover{color:var(--text);background:var(--surface2)}
+
+  /* Welcome */
+  .welcome{text-align:center;padding:20px 8px;animation:fadeUp .5s ease both}
+  .welcome .icon{font-size:2.4rem;margin-bottom:10px;display:block}
+  .welcome h2{font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:7px;
+    background:linear-gradient(90deg,#e8e9f3,#fb923c);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .welcome p{color:var(--muted);font-size:.81rem;line-height:1.65;max-width:440px;margin:0 auto 14px}
+  .steps{text-align:left;display:block;width:100%;max-width:560px;margin:0 auto 8px;
+    background:rgba(241,99,52,.07);border:1px solid var(--border);
+    border-radius:14px;padding:14px 16px;font-size:.78rem;color:var(--muted)}
+  .steps b{color:var(--accent2);display:block;margin-bottom:10px;font-size:.82rem}
+  .steps ol{padding-left:16px}
+  .steps li{margin:5px 0;line-height:1.5}
+  .steps a{color:var(--accent2);text-decoration:none}
+  .steps a:hover{text-decoration:underline}
+  .word-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:12px}
+  .word-card{background:rgba(241,99,52,.08);border:1px solid var(--border);
+    border-radius:10px;padding:8px 6px;font-family:'DM Sans',sans-serif;
+    font-size:.78rem;color:var(--text);cursor:pointer;text-align:center;
+    transition:background .2s,border-color .2s,transform .15s}
+  .word-card:hover{background:rgba(241,99,52,.18);border-color:var(--accent);transform:scale(1.04)}
+  .word-card:active{transform:scale(.97)}
+
+  /* Level tabs */
+  .level-tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:10px 0 14px}
+  .level-tab{background:rgba(255,255,255,.04);border:1px solid var(--border);
+    border-radius:10px;padding:8px 4px 7px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    transition:background .2s,border-color .2s,transform .15s;font-family:'DM Sans',sans-serif}
+  .level-tab:hover{background:rgba(255,255,255,.08);border-color:var(--lvl-color,var(--accent))}
+  .level-tab.active{background:rgba(255,255,255,.1);
+    border-color:var(--lvl-color,var(--accent));
+    box-shadow:0 0 0 2px color-mix(in srgb,var(--lvl-color,var(--accent)) 30%,transparent)}
+  .level-emoji{font-size:1.1rem;line-height:1}
+  .level-label{font-size:.72rem;font-weight:700;color:var(--lvl-color,var(--text));line-height:1.2}
+  .level-name{font-size:.58rem;color:var(--muted);line-height:1.2;text-align:center}
+
+  .refresh-btn{margin-top:12px;background:none;border:none;
+    color:var(--accent2);font-family:'DM Sans',sans-serif;font-size:.73rem;cursor:pointer;
+    padding:4px 0;display:flex;align-items:center;gap:5px;margin-left:auto;margin-right:auto;
+    transition:opacity .2s}
+  .refresh-btn:hover{opacity:.7}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;justify-content:center}
+  .chip{background:var(--surface2);border:1px solid var(--border);border-radius:99px;
+    padding:6px 15px;font-size:.76rem;color:var(--muted);cursor:pointer;
+    transition:color .2s,border-color .2s,background .2s}
+  .chip:hover{color:var(--text);border-color:var(--accent);background:rgba(241,99,52,.08)}
+
+  .error-bubble{background:rgba(220,60,60,.1);border:1px solid rgba(220,60,60,.22);
+    color:#ff9e9e;border-radius:14px;padding:11px 15px;font-size:.82rem}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- API Key bar -->
+  <div id="key-panel">
+    <label>🔑 Groq API Key</label>
+    <input type="password" id="apiKeyInput" placeholder="gsk_xxxxxxxxxxxxxxxxxxxxxxxx" oninput="onKeyInput()">
+    <span class="key-status" id="keyStatus">⬜</span>
+    <a class="key-link" href="https://console.groq.com/keys" target="_blank">Obtener gratis →</a>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="header-brand">
+      <div class="logo">🗣️</div>
+      <div class="brand-text">
+        <h1>Mi Traductor</h1>
+        <p>INGLÉS ↔ ESPAÑOL · GROQ</p>
+      </div>
+    </div>
+    <div class="header-controls">
+      <div class="select-wrap">
+        <select id="modelSelect">
+          <option value="llama-3.3-70b-versatile">Llama 3.3 70B ⚡</option>
+        </select>
+      </div>
+      <div class="select-wrap">
+        <select id="tempSelect">
+          <option value="0.2">Preciso</option>
+          <option value="0.5" selected>Equilibrado</option>
+          <option value="0.9">Creativo</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <div id="chat"></div>
+
+  <footer>
+    <div class="input-row">
+      <textarea id="input" rows="1" placeholder="Escribe en inglés o español…"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Enviar">➤</button>
+    </div>
+    <div class="footer-meta">
+      <span class="hint">↵ Enviar · Shift+↵ Nueva línea</span>
+      <button class="clear-btn" onclick="clearChat()">🗑 Limpiar</button>
+    </div>
+  </footer>
+
+</div>
+<script>
+const SYSTEM_PROMPT = `Eres «Mi Traductor», un asistente bilingüe (inglés↔español). Detecta automáticamente el idioma de entrada y traduce al otro. Si el usuario especifica otros idiomas, respétalos.
+
+Responde SIEMPRE con esta plantilla en Markdown (~250 palabras):
+
+### 🗣️ Traducción directa
+[traducción principal]
+
+---
+
+### 📘 Categoría gramatical y nivel CEFR
+[categoría + nivel aproximado]
+
+---
+
+### 📚 Casos de uso
+*(3 ejemplos de sencillo a avanzado, con la palabra/frase en **negrita**)*
+1. ...
+2. ...
+3. ...
+
+---
+
+### 🧠 Relación inverosímil
+*(mnemotecnia estilo Ramón Campayo, 1–2 frases vividas)*
+
+---
+
+### 🎯 Comparación y matices
+*(sinónimos, falsos amigos, registro, región si aplica)*
+
+---
+
+### 🎲 Mini-reto
+Pregunta de opción múltiple con cinco opciones (A–E). NO resaltes la correcta.`;
+
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
+// Palabras por nivel CEFR — Cambridge frequency list
+const WORDS_BY_LEVEL = {
+  A1: {
+    label:'A1', emoji:'🌱', name:'Principiante',
+    color:'#4ade80',
+    words:["ask","big","buy","can","cat","day","eat","get","go","hat",
+           "help","home","hot","house","job","know","like","live","look","love",
+           "make","man","name","need","new","one","open","pay","put","read",
+           "run","say","see","sit","talk","take","tell","time","use","want",
+           "way","work","write","year","yes","give","come","good","have","think"]
+  },
+  A2: {
+    label:'A2', emoji:'🌿', name:'Básico',
+    color:'#86efac',
+    words:["agree","allow","begin","bring","build","change","choose","close","copy","create",
+           "enjoy","explain","fail","fall","feel","fill","find","finish","fix","follow",
+           "forget","grow","happen","hold","hope","improve","include","invite","join","keep",
+           "learn","leave","let","listen","lose","miss","move","offer","order","plan",
+           "play","prepare","reach","receive","remember","send","show","spend","start","stop",
+           "suggest","travel","try","turn","visit","walk","watch","win","wish","wonder"]
+  },
+  B1: {
+    label:'B1', emoji:'🌻', name:'Intermedio',
+    color:'#fbbf24',
+    words:["achieve","affect","argue","attach","avoid","bother","carry","cause","charge","check",
+           "claim","collect","concern","consider","contain","control","cover","deal","decide","depend",
+           "describe","discover","discuss","divide","doubt","drop","earn","effort","escape","establish",
+           "examine","exist","expect","force","gather","handle","hide","indicate","influence","involve",
+           "judge","lack","lead","level","limit","link","manage","match","measure","mention",
+           "mind","notice","occur","perform","pick","prevent","provide","pull","push","realize",
+           "recognize","reduce","refer","remain","remove","replace","require","respond","rise","search",
+           "serve","share","solve","spread","support","survive","tend","treat","trust","waste"]
+  },
+  B2: {
+    label:'B2', emoji:'🌳', name:'Intermedio alto',
+    color:'#f97316',
+    words:["acknowledge","acquire","adapt","address","administer","advocate","allocate","analyze","anticipate","apply",
+           "assess","assume","attribute","challenge","clarify","collaborate","compensate","compile","conclude","conduct",
+           "confront","consent","construct","contribute","convince","coordinate","decline","define","demonstrate","determine",
+           "distinguish","distribute","elaborate","eliminate","emphasize","encounter","enforce","engage","enhance","evaluate",
+           "execute","expose","extract","facilitate","generate","identify","implement","imply","impose","interpret",
+           "invest","justify","maintain","minimize","negotiate","obtain","outline","overcome","perceive","predict",
+           "prioritize","process","promote","propose","pursue","reinforce","reject","resolve","restrict","reveal",
+           "select","shift","submit","sustain","transform","undertake","utilize","validate","vary","verify"]
+  },
+  C1: {
+    label:'C1', emoji:'🏔️', name:'Avanzado',
+    color:'#ef4444',
+    words:["abdicate","aberrant","alleviate","ambiguous","analogous","articulate","attenuate","augment","autonomous","capitalize",
+           "catalyst","circumvent","coherent","compel","comprehensive","concede","concurrent","consolidate","contemplate","contradict",
+           "conventional","correlate","culminate","deduce","deliberate","deplete","derive","deviate","differentiate","discern",
+           "disparity","encompass","endeavor","erratic","exacerbate","explicit","formulate","groundbreaking","hypothesize","illuminate",
+           "implicit","induce","infer","inherent","initiate","integrate","interconnect","mitigate","nuance","obsolete",
+           "paradox","perpetuate","pragmatic","preceding","preliminary","prevalent","profound","rationale","reconcile","reinstate",
+           "reluctant","rigorous","scrutinize","skeptical","sophisticated","stipulate","subsequent","threshold","transcend","unprecedented"]
+  },
+  C2: {
+    label:'C2', emoji:'🌌', name:'Maestría',
+    color:'#a78bfa',
+    words:["abstruse","acrimonious","adjudicate","ameliorate","anachronism","antithetical","approbation","arcane","assiduous","attenuate",
+           "auspicious","axiom","beleaguer","bifurcate","candor","clandestine","cogent","commensurate","compendium","conjecture",
+           "convoluted","corroborate","covert","dearth","delineate","diatribe","dichotomy","diffidence","dilatory","discordant",
+           "dogmatic","elicit","eloquent","embroil","equivocate","erudite","evocative","excoriate","fallacious","fatuous",
+           "fervent","florid","forbearance","fortuitous","grandiloquent","impeccable","impunity","incisive","indeterminate","inimical",
+           "inscrutable","intransigent","irrefutable","juxtapose","laconic","loquacious","mendacious","meticulous","obfuscate","obstinate",
+           "omniscient","opaque","ostensible","pellucid","peremptory","perfidious","perspicacious","polemic","pragmatic","preclude",
+           "propitious","recalcitrant","reticent","salient","solipsistic","specious","superfluous","tenacious","ubiquitous","venerate"]
+  }
+};
+
+let selectedLevel = 'B1'; // nivel por defecto
+
+function getRandomWords(n = 8, level = selectedLevel) {
+  const pool = WORDS_BY_LEVEL[level]?.words ?? WORDS_BY_LEVEL.B1.words;
+  return [...pool].sort(() => Math.random() - 0.5).slice(0, n);
+}
+
+const SUGGESTIONS = getRandomWords(6);
+
+let conversationHistory = [];
+let isLoading = false;
+
+marked.setOptions({ breaks:true, gfm:true });
+
+const chatDiv   = document.getElementById('chat');
+const inputEl   = document.getElementById('input');
+const sendBtn   = document.getElementById('sendBtn');
+const keyInput  = document.getElementById('apiKeyInput');
+const keyStatus = document.getElementById('keyStatus');
+
+const SAVED_KEY = localStorage.getItem('groq_api_key') || '';
+if (SAVED_KEY) {
+  keyInput.value = SAVED_KEY;
+  loadModels(SAVED_KEY);
+}
+
+// Categorías para agrupar modelos en el select
+const MODEL_SKIP = ['whisper','tts','guard','safeguard','embed','vision-preview'];
+function shouldSkip(id) { return MODEL_SKIP.some(s => id.toLowerCase().includes(s)); }
+
+function modelLabel(id) {
+  // Nombre legible a partir del id
+  return id
+    .replace(/^(meta-llama|moonshotai|openai|qwen)\//,'')
+    .replace(/-/g,' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function modelGroup(id) {
+  const l = id.toLowerCase();
+  if (l.includes('llama-4'))       return '🦙 Llama 4';
+  if (l.includes('llama'))         return '🦙 Llama 3';
+  if (l.includes('qwen'))          return '🌊 Qwen';
+  if (l.includes('kimi'))          return '🌙 Kimi';
+  if (l.includes('gpt-oss'))       return '🤖 GPT OSS';
+  if (l.includes('deepseek'))      return '🔍 DeepSeek';
+  if (l.includes('compound'))      return '⚙️ Compound';
+  if (l.includes('gemma'))         return '💎 Gemma';
+  if (l.includes('mixtral'))       return '🔀 Mixtral';
+  return '✦ Otros';
+}
+
+async function loadModels(key) {
+  keyStatus.textContent = '⏳';
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/models', {
+      headers: { 'Authorization': `Bearer ${key}` }
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+
+    const models = data.data
+      .filter(m => !shouldSkip(m.id))
+      .sort((a,b) => a.id.localeCompare(b.id));
+
+    // Agrupar por categoría
+    const groups = {};
+    for (const m of models) {
+      const g = modelGroup(m.id);
+      if (!groups[g]) groups[g] = [];
+      groups[g].push(m);
+    }
+
+    const sel = document.getElementById('modelSelect');
+    const prev = sel.value;
+    sel.innerHTML = '';
+
+    for (const [groupName, items] of Object.entries(groups)) {
+      const og = document.createElement('optgroup');
+      og.label = groupName;
+      for (const m of items) {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = modelLabel(m.id);
+        if (m.id === 'llama-3.3-70b-versatile') opt.textContent += ' ⭐';
+        og.appendChild(opt);
+      }
+      sel.appendChild(og);
+    }
+
+    // Restaurar selección previa si sigue existiendo
+    if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+    else sel.value = 'llama-3.3-70b-versatile';
+
+    keyStatus.textContent = '✅';
+  } catch {
+    keyStatus.textContent = '❌';
+  }
+}
+
+let loadModelsTimer = null;
+function onKeyInput() {
+  const k = keyInput.value.trim();
+  const valid = k.startsWith('gsk_') && k.length > 20;
+  if (!valid) { keyStatus.textContent = '⬜'; return; }
+  if (k) localStorage.setItem('groq_api_key', k);
+  else   localStorage.removeItem('groq_api_key');
+  // Debounce: esperar 600ms tras dejar de escribir
+  clearTimeout(loadModelsTimer);
+  loadModelsTimer = setTimeout(() => loadModels(k), 600);
+}
+
+function getKey() { return keyInput.value.trim(); }
+
+inputEl.addEventListener('input', () => {
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+});
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+// Scroll solo si el usuario ya estaba al fondo (±80px de margen)
+function scrollBottom(force = false) {
+  const distFromBottom = chatDiv.scrollHeight - chatDiv.scrollTop - chatDiv.clientHeight;
+  if (force || distFromBottom < 80) {
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+  }
+}
+
+function addUserBubble(text) {
+  const w = document.createElement('div');
+  w.className = 'msg user';
+  w.innerHTML = `<div class="avatar usr">👤</div>
+    <div class="bubble user">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>`;
+  chatDiv.appendChild(w); scrollBottom(true); // forzar: el usuario acaba de enviar
+}
+
+function addTypingRow() {
+  const w = document.createElement('div');
+  w.className = 'msg'; w.id = 'typing-row';
+  w.innerHTML = `<div class="avatar ai">🗣️</div>
+    <div class="bubble ai"><div class="typing-wrap"><span></span><span></span><span></span></div></div>`;
+  chatDiv.appendChild(w); scrollBottom(true); // forzar: mostrar que está escribiendo
+}
+
+function createStreamBubble() {
+  const w = document.createElement('div');
+  w.className = 'msg';
+  const b = document.createElement('div');
+  b.className = 'bubble ai streaming-cursor'; b.id = 'stream-bub';
+  w.innerHTML = `<div class="avatar ai">🗣️</div>`;
+  w.appendChild(b); chatDiv.appendChild(w); scrollBottom(true); // forzar: inicio del mensaje
+  return b;
+}
+
+// ── Groq streaming via fetch + SSE ──
+async function callGroqStream(messages, model, temperature, onChunk) {
+  const key = getKey();
+  if (!key) throw new Error('Pega tu API key de Groq arriba (gratis en console.groq.com)');
+
+  const res = await fetch(GROQ_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${key}`
+    },
+    body: JSON.stringify({
+      model,
+      temperature,
+      max_tokens: 1400,
+      stream: true,
+      messages
+    })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Error HTTP ${res.status}`);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop(); // línea incompleta al final
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed === 'data: [DONE]') continue;
+      if (!trimmed.startsWith('data: ')) continue;
+      try {
+        const json = JSON.parse(trimmed.slice(6));
+        const chunk = json.choices?.[0]?.delta?.content ?? '';
+        if (chunk) onChunk(chunk);
+      } catch { /* ignorar líneas malformadas */ }
+    }
+  }
+}
+
+async function sendMessage() {
+  const text = inputEl.value.trim();
+  if (!text || isLoading) return;
+
+  if (!getKey()) {
+    keyInput.focus();
+    keyInput.style.borderColor = 'var(--accent)';
+    setTimeout(() => keyInput.style.borderColor = '', 1500);
+    return;
+  }
+
+  isLoading = true; sendBtn.disabled = true;
+  inputEl.value = ''; inputEl.style.height = 'auto';
+
+  addUserBubble(text);
+  conversationHistory.push({ role:'user', content:text });
+  addTypingRow();
+
+  const model = document.getElementById('modelSelect').value;
+  const temp  = parseFloat(document.getElementById('tempSelect').value);
+  const messages = [
+    { role:'system', content: SYSTEM_PROMPT },
+    ...conversationHistory
+  ];
+
+  let fullText = '';
+  let streamBub = null;
+  let firstChunk = true;
+
+  try {
+    await callGroqStream(messages, model, temp, (chunk) => {
+      if (firstChunk) {
+        document.getElementById('typing-row')?.remove();
+        streamBub = createStreamBubble();
+        firstChunk = false;
+      }
+      fullText += chunk;
+      streamBub.innerHTML = marked.parse(fullText);
+      scrollBottom();
+    });
+
+    if (streamBub) {
+      streamBub.classList.remove('streaming-cursor');
+      streamBub.innerHTML = marked.parse(fullText);
+    }
+
+    // Si no llegó nada
+    if (firstChunk) {
+      document.getElementById('typing-row')?.remove();
+      const w = document.createElement('div');
+      w.className = 'msg';
+      w.innerHTML = `<div class="avatar ai">🗣️</div><div class="bubble ai">⚠️ Sin respuesta del modelo.</div>`;
+      chatDiv.appendChild(w); scrollBottom();
+    }
+
+    if (fullText) conversationHistory.push({ role:'assistant', content:fullText });
+
+  } catch(err) {
+    document.getElementById('typing-row')?.remove();
+    streamBub?.classList.remove('streaming-cursor');
+    const e = document.createElement('div');
+    e.className = 'error-bubble';
+    e.textContent = `❌ ${err?.message ?? String(err)}`;
+    chatDiv.appendChild(e);
+    conversationHistory.pop();
+    scrollBottom();
+  } finally {
+    isLoading = false; sendBtn.disabled = false;
+    // No llamamos inputEl.focus() para no abrir el teclado en móvil
+  }
+}
+
+function clearChat() {
+  chatDiv.innerHTML = ''; conversationHistory = []; showWelcome();
+}
+
+function showWelcome() {
+  const w = document.createElement('div');
+  w.className = 'welcome';
+  w.id = 'welcome-block';
+  w.innerHTML = `
+    <span class="icon">⚡</span>
+    <h2>Mi Traductor · Groq</h2>
+    <p>Escribe cualquier palabra o frase en <strong style="color:#fb923c">inglés o español</strong> para obtener traducción, ejemplos, mnemotecnia y un mini-reto.</p>
+    <div class="steps">
+      <b>📚 Palabras para practicar hoy</b>
+
+      <div class="level-tabs" id="level-tabs">
+        ${Object.entries(WORDS_BY_LEVEL).map(([key, lvl]) => `
+          <button class="level-tab ${key === selectedLevel ? 'active' : ''}"
+            onclick="selectLevel('${key}')"
+            style="--lvl-color:${lvl.color}">
+            <span class="level-emoji">${lvl.emoji}</span>
+            <span class="level-label">${lvl.label}</span>
+            <span class="level-name">${lvl.name}</span>
+          </button>`).join('')}
+      </div>
+
+      <div class="word-grid" id="word-grid">
+        ${renderWordCards(getRandomWords(8))}
+      </div>
+
+      <button onclick="refreshWords()" class="refresh-btn">🔄 Otras palabras</button>
+    </div>`;
+  chatDiv.appendChild(w);
+}
+
+function renderWordCards(words) {
+  return words.map(word =>
+    `<button class="word-card" onclick="quickSend('${word}')">${word}</button>`
+  ).join('');
+}
+
+function selectLevel(key) {
+  selectedLevel = key;
+  // Actualizar tabs
+  document.querySelectorAll('.level-tab').forEach(t => {
+    t.classList.toggle('active', t.getAttribute('onclick').includes(`'${key}'`));
+  });
+  // Actualizar grid y chips
+  refreshWords();
+}
+
+function refreshWords() {
+  const grid = document.getElementById('word-grid');
+  if (grid) grid.innerHTML = renderWordCards(getRandomWords(8));
+}
+
+function quickSend(text) {
+  if (!getKey()) { keyInput.focus(); return; }
+  inputEl.value = text; sendMessage();
+}
+
+showWelcome();
+inputEl.focus();
+</script>
+</body>
+</html>
