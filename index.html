@@ -442,6 +442,7 @@ const SUGGESTIONS = getRandomWords(6);
 
 let conversationHistory = [];
 let isLoading = false;
+let lastUserMsgEl = null;
 
 marked.setOptions({ breaks:true, gfm:true });
 
@@ -594,7 +595,9 @@ function addUserBubble(text) {
   w.className = 'msg user';
   w.innerHTML = `<div class="avatar usr">👤</div>
     <div class="bubble user">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>`;
-  chatDiv.appendChild(w); scrollBottom(true); // forzar: el usuario acaba de enviar
+  chatDiv.appendChild(w);
+  lastUserMsgEl = w;
+  scrollBottom(true); // forzar: el usuario acaba de enviar
 }
 
 function addTypingRow() {
@@ -612,13 +615,14 @@ function createStreamBubble() {
   b.className = 'bubble ai streaming-cursor'; b.id = 'stream-bub';
   w.innerHTML = `<div class="avatar ai">🗣️</div>`;
   w.appendChild(b); chatDiv.appendChild(w);
-  // Scroll hasta el inicio de la burbuja
-  w.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  // Salto más marcado hacia abajo para mejorar lectura de primeros renglones
+  // Alinear arriba el último mensaje del usuario para que sea lo primero visible
   setTimeout(() => {
-    chatDiv.scrollBy({ top: 80, behavior: 'smooth' });
-  }, 120);
+    if (lastUserMsgEl) {
+      chatDiv.scrollTo({ top: lastUserMsgEl.offsetTop, behavior: 'smooth' });
+    } else {
+      w.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 80);
 
   return b;
 }
