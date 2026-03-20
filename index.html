@@ -27,17 +27,52 @@
     display:flex;flex-direction:column;
     height:100vh;height:100dvh} /* dvh = excluye barra del navegador en móvil */
 
-  /* ── API KEY PANEL ── */
-  #key-panel{
+  /* ── API KEY FLOATING PANEL ── */
+  #key-toggle{
+    position:fixed;
+    right:14px;
+    bottom:calc(14px + env(safe-area-inset-bottom));
+    z-index:20;
+    border:none;
+    border-radius:999px;
     padding:10px 14px;
-    background:rgba(241,99,52,.07);
-    border-bottom:1px solid var(--border);
-    display:flex;align-items:center;gap:8px;
-    flex-shrink:0;
+    font-family:'DM Sans',sans-serif;
+    font-size:.74rem;
+    color:#fff;
+    background:linear-gradient(135deg,#c2410c,#f16334);
+    box-shadow:0 6px 22px rgba(241,99,52,.4);
+    cursor:pointer;
+    touch-action:manipulation;
+  }
+  #key-toggle:active{transform:scale(.97)}
+
+  #key-panel{
+    position:fixed;
+    left:50%;
+    transform:translateX(-50%) translateY(120%);
+    bottom:calc(64px + env(safe-area-inset-bottom));
+    width:min(640px,calc(100vw - 20px));
+    padding:11px 12px;
+    background:rgba(10,12,20,.98);
+    border:1px solid var(--border);
+    border-radius:14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    z-index:21;
+    opacity:0;
+    pointer-events:none;
+    transition:transform .25s ease,opacity .25s ease;
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  #key-panel.open{
+    transform:translateX(-50%) translateY(0);
+    opacity:1;
+    pointer-events:auto;
   }
   #key-panel label{font-size:.72rem;color:var(--muted);white-space:nowrap}
   #apiKeyInput{
-    flex:1;min-width:0; /* evita overflow en flex */
+    flex:1;min-width:0;
     background:var(--surface2);border:1px solid var(--border);
     border-radius:10px;padding:7px 12px;color:var(--text);
     font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;
@@ -195,9 +230,10 @@
 
   /* ── MOBILE ≤ 480px (S22 Ultra = ~412px CSS width) ── */
   @media (max-width:480px){
-    /* Key panel: ocultar label en móvil para ganar espacio */
-    #key-panel label{display:none}
-    .key-link{display:none}
+    /* Panel API: compacto en móvil */
+    #key-toggle{right:10px;bottom:calc(10px + env(safe-area-inset-bottom));padding:9px 12px;font-size:.7rem}
+    #key-panel{bottom:calc(56px + env(safe-area-inset-bottom));padding:10px}
+    #key-panel label,.key-link{display:none}
 
     /* Header: selects más compactos */
     header{padding:8px 12px;gap:6px}
@@ -239,14 +275,6 @@
 <body>
 <div class="app">
 
-  <!-- API Key bar -->
-  <div id="key-panel">
-    <label>🔑 Groq API Key</label>
-    <input type="password" id="apiKeyInput" placeholder="gsk_xxxxxxxxxxxxxxxxxxxxxxxx" oninput="onKeyInput()">
-    <span class="key-status" id="keyStatus">⬜</span>
-    <a class="key-link" href="https://console.groq.com/keys" target="_blank">Obtener gratis →</a>
-  </div>
-
   <!-- Header -->
   <header>
     <div class="header-brand">
@@ -259,7 +287,7 @@
     <div class="header-controls">
       <div class="select-wrap">
         <select id="modelSelect">
-          <option value="llama-3.3-70b-versatile">Llama 3.3 70B ⚡</option>
+          <option value="moonshotai/kimi-k2-instruct-0905">Kimi K2 Instruct 0905 ⭐</option>
         </select>
       </div>
       <div class="select-wrap">
@@ -286,6 +314,15 @@
   </footer>
 
 </div>
+
+<button id="key-toggle" onclick="toggleKeyPanel()">🔑 API Key</button>
+<div id="key-panel">
+  <label>🔑 Groq API Key</label>
+  <input type="password" id="apiKeyInput" placeholder="gsk_xxxxxxxxxxxxxxxxxxxxxxxx" oninput="onKeyInput()">
+  <span class="key-status" id="keyStatus">⬜</span>
+  <a class="key-link" href="https://console.groq.com/keys" target="_blank">Obtener gratis →</a>
+</div>
+
 <script>
 const SYSTEM_PROMPT = `Eres «Mi Traductor», un asistente bilingüe (inglés↔español). Detecta automáticamente el idioma de entrada y traduce al otro. Si el usuario especifica otros idiomas, respétalos.
 
@@ -408,13 +445,35 @@ let isLoading = false;
 
 marked.setOptions({ breaks:true, gfm:true });
 
-const chatDiv   = document.getElementById('chat');
-const inputEl   = document.getElementById('input');
-const sendBtn   = document.getElementById('sendBtn');
-const keyInput  = document.getElementById('apiKeyInput');
-const keyStatus = document.getElementById('keyStatus');
+const chatDiv     = document.getElementById('chat');
+const inputEl     = document.getElementById('input');
+const sendBtn     = document.getElementById('sendBtn');
+const keyInput    = document.getElementById('apiKeyInput');
+const keyStatus   = document.getElementById('keyStatus');
+const keyPanel    = document.getElementById('key-panel');
+const modelSelect = document.getElementById('modelSelect');
+
+const DEFAULT_MODEL_FALLBACK = 'moonshotai/kimi-k2-instruct-0905';
+const SAVED_MODEL_KEY = 'groq_default_model';
+
+function toggleKeyPanel(force) {
+  if (typeof force === 'boolean') keyPanel.classList.toggle('open', force);
+  else keyPanel.classList.toggle('open');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') toggleKeyPanel(false);
+});
 
 const SAVED_KEY = localStorage.getItem('groq_api_key') || '';
+const SAVED_DEFAULT_MODEL = localStorage.getItem(SAVED_MODEL_KEY) || '';
+if (SAVED_DEFAULT_MODEL) modelSelect.value = SAVED_DEFAULT_MODEL;
+
+modelSelect.addEventListener('change', () => {
+  const selected = modelSelect.value;
+  if (selected) localStorage.setItem(SAVED_MODEL_KEY, selected);
+});
+
 if (SAVED_KEY) {
   keyInput.value = SAVED_KEY;
   loadModels(SAVED_KEY);
@@ -467,8 +526,9 @@ async function loadModels(key) {
       groups[g].push(m);
     }
 
-    const sel = document.getElementById('modelSelect');
+    const sel = modelSelect;
     const prev = sel.value;
+    const savedDefault = localStorage.getItem(SAVED_MODEL_KEY) || '';
     sel.innerHTML = '';
 
     for (const [groupName, items] of Object.entries(groups)) {
@@ -478,15 +538,20 @@ async function loadModels(key) {
         const opt = document.createElement('option');
         opt.value = m.id;
         opt.textContent = modelLabel(m.id);
-        if (m.id === 'llama-3.3-70b-versatile') opt.textContent += ' ⭐';
+        if (m.id === DEFAULT_MODEL_FALLBACK) opt.textContent += ' ⭐';
         og.appendChild(opt);
       }
       sel.appendChild(og);
     }
 
-    // Restaurar selección previa si sigue existiendo
-    if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
-    else sel.value = 'llama-3.3-70b-versatile';
+    // Prioridad: modelo guardado > selección previa > default Kimi > primera opción
+    if ([...sel.options].some(o => o.value === savedDefault)) sel.value = savedDefault;
+    else if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+    else if ([...sel.options].some(o => o.value === DEFAULT_MODEL_FALLBACK)) sel.value = DEFAULT_MODEL_FALLBACK;
+    else if (sel.options.length) sel.value = sel.options[0].value;
+
+    // Persistir siempre la selección activa como predeterminada
+    if (sel.value) localStorage.setItem(SAVED_MODEL_KEY, sel.value);
 
     keyStatus.textContent = '✅';
   } catch {
@@ -606,6 +671,7 @@ async function sendMessage() {
   if (!text || isLoading) return;
 
   if (!getKey()) {
+    toggleKeyPanel(true);
     keyInput.focus();
     keyInput.style.borderColor = 'var(--accent)';
     setTimeout(() => keyInput.style.borderColor = '', 1500);
@@ -684,7 +750,6 @@ function showWelcome() {
   w.innerHTML = `
     <span class="icon">⚡</span>
     <h2>Mi Traductor · Groq</h2>
-    <p>Escribe cualquier palabra o frase en <strong style="color:#fb923c">inglés o español</strong> para obtener traducción, ejemplos, mnemotecnia y un mini-reto.</p>
     <div class="steps">
       <b>📚 Palabras para practicar hoy</b>
 
@@ -730,7 +795,7 @@ function refreshWords() {
 }
 
 function quickSend(text) {
-  if (!getKey()) { keyInput.focus(); return; }
+  if (!getKey()) { toggleKeyPanel(true); keyInput.focus(); return; }
   inputEl.value = text; sendMessage();
 }
 
