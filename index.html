@@ -612,8 +612,14 @@ function createStreamBubble() {
   b.className = 'bubble ai streaming-cursor'; b.id = 'stream-bub';
   w.innerHTML = `<div class="avatar ai">🗣️</div>`;
   w.appendChild(b); chatDiv.appendChild(w);
-  // Scroll hasta el TOP de la burbuja para que el usuario lea desde el principio
+  // Scroll hasta el inicio de la burbuja
   w.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Pequeño salto hacia abajo para mejorar lectura de primeros renglones
+  setTimeout(() => {
+    chatDiv.scrollBy({ top: 28, behavior: 'smooth' });
+  }, 120);
+
   return b;
 }
 
