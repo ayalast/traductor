@@ -615,9 +615,9 @@ function createStreamBubble() {
   // Scroll hasta el inicio de la burbuja
   w.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-  // Pequeño salto hacia abajo para mejorar lectura de primeros renglones
+  // Salto más marcado hacia abajo para mejorar lectura de primeros renglones
   setTimeout(() => {
-    chatDiv.scrollBy({ top: 28, behavior: 'smooth' });
+    chatDiv.scrollBy({ top: 80, behavior: 'smooth' });
   }, 120);
 
   return b;
