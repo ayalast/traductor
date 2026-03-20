@@ -608,6 +608,20 @@ function addTypingRow() {
   chatDiv.appendChild(w); scrollBottom(true); // forzar: mostrar que está escribiendo
 }
 
+function alignLastUserToTop(smooth = false) {
+  if (!lastUserMsgEl) return;
+
+  const userRect = lastUserMsgEl.getBoundingClientRect();
+  const chatRect = chatDiv.getBoundingClientRect();
+  const deltaTop = userRect.top - chatRect.top;
+  const targetTop = chatDiv.scrollTop + deltaTop;
+  const maxTop = chatDiv.scrollHeight - chatDiv.clientHeight;
+  const clampedTop = Math.max(0, Math.min(targetTop, maxTop));
+
+  if (smooth) chatDiv.scrollTo({ top: clampedTop, behavior: 'smooth' });
+  else chatDiv.scrollTop = clampedTop;
+}
+
 function createStreamBubble() {
   const w = document.createElement('div');
   w.className = 'msg';
@@ -615,14 +629,9 @@ function createStreamBubble() {
   b.className = 'bubble ai streaming-cursor'; b.id = 'stream-bub';
   w.innerHTML = `<div class="avatar ai">🗣️</div>`;
   w.appendChild(b); chatDiv.appendChild(w);
-  // Alinear arriba el último mensaje del usuario para que sea lo primero visible
-  setTimeout(() => {
-    if (lastUserMsgEl) {
-      chatDiv.scrollTo({ top: lastUserMsgEl.offsetTop, behavior: 'smooth' });
-    } else {
-      w.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, 80);
+
+  // Primer ajuste al aparecer la respuesta
+  setTimeout(() => alignLastUserToTop(true), 60);
 
   return b;
 }
@@ -715,7 +724,8 @@ async function sendMessage() {
       }
       fullText += chunk;
       streamBub.innerHTML = marked.parse(fullText);
-      // No hacemos scroll aquí — el usuario lee desde el principio
+      // Mantener el último mensaje del usuario pegado arriba mientras crece la respuesta
+      alignLastUserToTop(false);
     });
 
     if (streamBub) {
