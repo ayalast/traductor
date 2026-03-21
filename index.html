@@ -2,32 +2,83 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mi Traductor ✦ Groq</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mi Traductor âœ¦ Groq + DeepSeek</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=DM+Sans:wght@300;400;500;600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   :root {
     --bg:#0a0c14; --surface2:#181c2e;
-    --border:rgba(241,99,52,0.18); --accent:#f16334;
+    --border:rgba(241,99,52,0.22); --accent:#f16334;
     --accent2:#fb923c; --gold:#e8c97a;
-    --text:#e8e9f3; --muted:#7a7f9e;
+    --text:#eef1ff; --muted:#9ba3c7;
     --bubble-user:linear-gradient(135deg,#c2410c,#f16334);
     --bubble-ai:#181c2e;
+    --bg-overlay:rgba(10,12,20,.92);
+    --panel-bg:rgba(10,12,20,.98);
+    --glow-1:rgba(241,99,52,.14);
+    --glow-2:rgba(251,146,60,.10);
+    --logo-grad-1:#c2410c;
+    --logo-grad-2:#fb923c;
+    --avatar-ai-1:#7c2d12;
+    --avatar-ai-2:#f16334;
+    --avatar-usr-1:#f16334;
+    --avatar-usr-2:#fb923c;
+    --title-grad-start:#eef1ff;
+    --title-grad-end:#fb923c;
+    --heading:#ffd9bf;
+    --emphasis:#e9c87f;
+    --code-bg:rgba(241,99,52,.14);
+    --code-text:#ffd2aa;
+    --focus-ring:rgba(241,99,52,.18);
+    --send-grad-1:#c2410c;
+    --send-grad-2:#f16334;
+    --user-text:#ffffff;
+    --logo-shadow:rgba(241,99,52,.35);
+    --scroll-thumb:#2a2f4a;
+    --bubble-shadow:rgba(0,0,0,.3);
+    --send-shadow:rgba(241,99,52,.4);
+    --send-shadow-hover:rgba(241,99,52,.55);
+    --steps-bg:rgba(241,99,52,.07);
+    --error-bg:rgba(220,60,60,.1);
+    --error-border:rgba(220,60,60,.22);
+    --error-text:#ff9e9e;
+    --font-body:'DM Sans',sans-serif;
+    --font-display:'Playfair Display',serif;
+    --font-code:'JetBrains Mono',ui-monospace,monospace;
+    --link-color:#8cc8ff;
+    --link-hover:#c6e5ff;
+    --paper-opacity:0;
+    --paper-contrast:1;
+    --paper-global-opacity:0;
+    --paper-global-contrast:1;
   }
   *{margin:0;padding:0;box-sizing:border-box}
-  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;
+  body{background:var(--bg);color:var(--text);font-family:var(--font-body);
     min-height:100vh;min-height:100dvh;display:flex;justify-content:center;overflow:hidden}
   body::before{content:'';position:fixed;inset:0;z-index:0;
     background:
-      radial-gradient(ellipse 60% 50% at 20% 10%,rgba(241,99,52,.1) 0%,transparent 70%),
-      radial-gradient(ellipse 50% 40% at 80% 90%,rgba(251,146,60,.07) 0%,transparent 70%);
+      radial-gradient(ellipse 60% 50% at 20% 10%,var(--glow-1) 0%,transparent 70%),
+      radial-gradient(ellipse 50% 40% at 80% 90%,var(--glow-2) 0%,transparent 70%);
     pointer-events:none}
+  body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+    opacity:var(--paper-opacity);mix-blend-mode:soft-light;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(255,255,255,.34) 0 0.6px, transparent 0.7px) 0 0/3px 3px,
+      radial-gradient(circle at 70% 60%, rgba(0,0,0,.24) 0 0.55px, transparent 0.7px) 1px 1px/3px 3px,
+      repeating-linear-gradient(0deg, rgba(120,95,60,.03) 0 2px, rgba(255,255,255,.015) 2px 4px);
+    filter:contrast(var(--paper-contrast)) saturate(.92)}
+  #paper-global-overlay{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
+    opacity:var(--paper-global-opacity);mix-blend-mode:soft-light;
+    background:
+      radial-gradient(circle at 25% 20%, rgba(255,255,255,.34) 0 0.6px, transparent 0.7px) 0 0/3px 3px,
+      radial-gradient(circle at 75% 68%, rgba(0,0,0,.26) 0 0.55px, transparent 0.7px) 1px 1px/3px 3px,
+      repeating-linear-gradient(0deg, rgba(120,95,60,.03) 0 2px, rgba(255,255,255,.015) 2px 4px);
+    filter:contrast(var(--paper-global-contrast)) saturate(.92)}
   .app{position:relative;z-index:1;width:100%;max-width:680px;
     display:flex;flex-direction:column;
-    height:100vh;height:100dvh} /* dvh = excluye barra del navegador en móvil */
+    height:100vh;height:100dvh}
 
-  /* ── SETTINGS PANEL ── */
   #key-panel{
     position:fixed;
     left:50%;
@@ -35,7 +86,7 @@
     bottom:calc(64px + env(safe-area-inset-bottom));
     width:min(640px,calc(100vw - 20px));
     padding:12px;
-    background:rgba(10,12,20,.98);
+    background:var(--panel-bg);
     border:1px solid var(--border);
     border-radius:14px;
     display:block;
@@ -45,241 +96,204 @@
     transition:transform .25s ease,opacity .25s ease;
     box-shadow:0 10px 30px rgba(0,0,0,.35);
   }
-  #key-panel.open{
-    transform:translateX(-50%) translateY(0);
-    opacity:1;
-    pointer-events:auto;
-  }
+  #key-panel.open{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
   .settings-title{font-size:.78rem;color:var(--accent2);font-weight:600;margin-bottom:8px}
   .settings-section{margin-top:8px}
   .settings-section label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:6px}
   .settings-row{display:flex;align-items:center;gap:8px}
-  #apiKeyInput{
+  #providerSelect,#apiKeyInput,#groqKeyInput,#deepseekKeyInput,#notesInput{
     flex:1;min-width:0;
     background:var(--surface2);border:1px solid var(--border);
     border-radius:10px;padding:7px 12px;color:var(--text);
-    font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;
+    font-family:var(--font-body);font-size:.8rem;outline:none;
     transition:border-color .2s;
   }
-  #apiKeyInput:focus{border-color:var(--accent)}
-  #apiKeyInput::placeholder{color:var(--muted)}
+  #providerSelect,#notesInput{width:100%}
+  #notesInput{min-height:86px;max-height:180px;resize:vertical}
+  #providerSelect:focus,#apiKeyInput:focus,#groqKeyInput:focus,#deepseekKeyInput:focus,#notesInput:focus{border-color:var(--accent)}
+  #apiKeyInput::placeholder,#groqKeyInput::placeholder,#deepseekKeyInput::placeholder,#notesInput::placeholder{color:var(--muted)}
   .key-link{font-size:.7rem;color:var(--accent2);text-decoration:none;white-space:nowrap}
   .key-link:hover{text-decoration:underline}
   .key-status{font-size:18px;flex-shrink:0;transition:all .3s}
-  #notesInput{
-    width:100%;min-height:90px;max-height:190px;resize:vertical;
-    background:var(--surface2);border:1px solid var(--border);border-radius:10px;
-    padding:9px 11px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.78rem;outline:none;
-  }
-  #notesInput:focus{border-color:var(--accent)}
 
-  /* ── HEADER ── */
-  header{padding:10px 14px;background:rgba(10,12,20,.9);backdrop-filter:blur(20px);
+  header{padding:10px 14px;background:var(--bg-overlay);backdrop-filter:blur(20px);
     border-bottom:1px solid var(--border);display:flex;align-items:center;
     justify-content:space-between;gap:8px;flex-shrink:0;flex-wrap:wrap}
   .header-brand{display:flex;align-items:center;gap:10px}
   .logo-btn{border:none;background:none;padding:0;cursor:pointer;flex-shrink:0;touch-action:manipulation}
   .logo{width:38px;height:38px;border-radius:12px;
-    background:linear-gradient(135deg,#c2410c,#fb923c);
+    background:linear-gradient(135deg,var(--logo-grad-1),var(--logo-grad-2));
     display:flex;align-items:center;justify-content:center;
-    font-size:18px;box-shadow:0 4px 18px rgba(241,99,52,.35)}
+    font-size:18px;box-shadow:0 4px 18px var(--logo-shadow)}
   .logo-btn:focus-visible .logo{outline:2px solid var(--accent2);outline-offset:2px}
-  .brand-text h1{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;
-    background:linear-gradient(90deg,#e8e9f3,#fb923c);
+  .brand-text h1{font-family:var(--font-display);font-size:1.1rem;font-weight:700;
+    background:linear-gradient(90deg,var(--title-grad-start),var(--title-grad-end));
     -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
   .brand-text p{font-size:.62rem;color:var(--muted);letter-spacing:.04em}
-  .header-controls{display:flex;gap:6px;flex-shrink:0}
+  .header-controls{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
   .select-wrap{position:relative}
-  .select-wrap::after{content:'▾';position:absolute;right:8px;top:50%;
-    transform:translateY(-50%);color:var(--muted);font-size:10px;pointer-events:none}
+  .select-wrap::after{content:'â–¾';position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:10px;pointer-events:none}
   select{appearance:none;background:var(--surface2);color:var(--text);
     border:1px solid var(--border);border-radius:10px;padding:6px 24px 6px 9px;
-    font-family:'DM Sans',sans-serif;font-size:.68rem;cursor:pointer;outline:none;
-    transition:border-color .2s;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+    font-family:var(--font-body);font-size:.68rem;cursor:pointer;outline:none;
+    transition:border-color .2s;max-width:150px;overflow:hidden;text-overflow:ellipsis}
   select:hover{border-color:var(--accent)}
+  .theme-open-btn{
+    appearance:none;background:var(--surface2);color:var(--text);
+    border:1px solid var(--border);border-radius:10px;padding:6px 10px;
+    font-family:var(--font-body);font-size:.68rem;cursor:pointer;outline:none;
+    transition:border-color .2s,transform .15s;white-space:nowrap
+  }
+  .theme-open-btn:hover{border-color:var(--accent);transform:translateY(-1px)}
 
-  /* ── CHAT ── */
   #chat{flex:1;overflow-y:auto;padding:16px 12px;display:flex;flex-direction:column;gap:14px;
-    scrollbar-width:thin;scrollbar-color:#2a2f4a transparent;
-    -webkit-overflow-scrolling:touch} /* scroll suave en iOS/Android */
+    scrollbar-width:thin;scrollbar-color:var(--scroll-thumb) transparent;-webkit-overflow-scrolling:touch}
   #chat::-webkit-scrollbar{width:3px}
-  #chat::-webkit-scrollbar-thumb{background:#2a2f4a;border-radius:99px}
+  #chat::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border-radius:99px}
 
   .msg{display:flex;align-items:flex-end;gap:7px;animation:fadeUp .3s ease both}
   .msg.user{flex-direction:row-reverse}
   @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-  .avatar{width:28px;height:28px;border-radius:8px;flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;font-size:13px}
-  .avatar.ai{background:linear-gradient(135deg,#7c2d12,#f16334)}
-  .avatar.usr{background:linear-gradient(135deg,#f16334,#fb923c)}
-  .bubble{max-width:90%;padding:11px 14px;border-radius:18px;
-    font-size:.85rem;line-height:1.6;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+  .avatar{width:28px;height:28px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px}
+  .avatar.ai{background:linear-gradient(135deg,var(--avatar-ai-1),var(--avatar-ai-2))}
+  .avatar.usr{background:linear-gradient(135deg,var(--avatar-usr-1),var(--avatar-usr-2))}
+  .msg-content{display:flex;flex-direction:column;gap:0;max-width:90%}
+  .msg.user .msg-content{align-items:flex-end}
+  .bubble{max-width:100%;padding:11px 14px;border-radius:18px;font-size:.85rem;line-height:1.6;box-shadow:0 4px 20px var(--bubble-shadow)}
   .bubble.ai{background:var(--bubble-ai);border:1px solid var(--border);border-bottom-left-radius:4px}
-  .bubble.user{background:var(--bubble-user);border-bottom-right-radius:4px;color:#fff}
+  .bubble.user{background:var(--bubble-user);border-bottom-right-radius:4px;color:var(--user-text)}
+  .msg-actions{display:flex;gap:6px;flex-wrap:wrap;max-height:0;opacity:0;overflow:hidden;pointer-events:none;transform:translateY(-3px);margin-top:0;transition:max-height .2s ease,opacity .2s ease,transform .2s ease,margin-top .2s ease}
+  .msg:hover .msg-actions,.msg:focus-within .msg-actions,.msg.actions-open .msg-actions{max-height:44px;opacity:1;pointer-events:auto;transform:translateY(0);margin-top:6px}
+  .msg-action-btn{border:1px solid var(--border);background:var(--surface2);color:var(--muted);border-radius:999px;padding:3px 8px;font-size:.66rem;cursor:pointer}
+  .msg-action-btn:hover{color:var(--text);border-color:var(--accent)}
+  .msg.editing .bubble{outline:2px solid var(--accent);outline-offset:2px}
 
-  .bubble.ai h1,.bubble.ai h2,.bubble.ai h3{font-family:'Playfair Display',serif;
-    color:#ffd0b5;margin:12px 0 4px;font-size:.9rem}
+  .bubble.ai h1,.bubble.ai h2,.bubble.ai h3{font-family:var(--font-display);color:var(--heading);margin:12px 0 4px;font-size:.9rem}
   .bubble.ai h3:first-child{margin-top:0}
-  .bubble.ai strong{color:var(--gold);font-weight:600}
-  .bubble.ai em{color:#e2b89e}
+  .bubble.ai strong{color:var(--emphasis);font-weight:600}
+  .bubble.ai em{color:var(--gold)}
   .bubble.ai hr{border:none;border-top:1px solid var(--border);margin:11px 0}
   .bubble.ai p{margin:4px 0}
   .bubble.ai ul,.bubble.ai ol{padding-left:16px;margin:4px 0}
   .bubble.ai li{margin:3px 0}
-  .bubble.ai code{background:rgba(241,99,52,.12);border:1px solid var(--border);
-    border-radius:5px;padding:1px 5px;font-size:.79rem;font-family:monospace;color:#fbb388}
-  .bubble.ai blockquote{border-left:3px solid var(--accent);
-    padding-left:10px;color:var(--muted);margin:6px 0;font-style:italic}
-
-  .streaming-cursor::after{content:'▋';color:var(--accent2);animation:blink .7s steps(1) infinite}
-  @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+  .bubble.ai code{background:var(--code-bg);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:.79rem;font-family:var(--font-code);color:var(--code-text)}
+  .bubble.ai a,.bubble.ai a:visited{color:var(--link-color);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
+  .bubble.ai a:hover{color:var(--link-hover)}
 
   .typing-wrap{display:flex;align-items:center;gap:5px;padding:11px 14px}
-  .typing-wrap span{width:6px;height:6px;border-radius:50%;
-    background:var(--accent);opacity:.5;animation:bounce 1.1s infinite ease}
+  .typing-wrap span{width:6px;height:6px;border-radius:50%;background:var(--accent);opacity:.5;animation:bounce 1.1s infinite ease}
   .typing-wrap span:nth-child(2){animation-delay:.16s}
   .typing-wrap span:nth-child(3){animation-delay:.32s}
   @keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-7px);opacity:1}}
 
-  /* ── FOOTER ── */
-  footer{padding:10px 12px 12px;background:rgba(10,12,20,.92);
-    backdrop-filter:blur(20px);border-top:1px solid var(--border);flex-shrink:0}
+  footer{padding:10px 12px 12px;background:var(--bg-overlay);backdrop-filter:blur(20px);border-top:1px solid var(--border);flex-shrink:0}
   .input-row{display:flex;gap:8px;align-items:flex-end}
   textarea{flex:1;resize:none;min-height:44px;max-height:110px;
     background:var(--surface2);border:1px solid var(--border);border-radius:14px;
-    padding:11px 14px;color:var(--text);font-family:'DM Sans',sans-serif;
-    font-size:16px; /* 16px evita zoom automático en iOS/Android al enfocar */
-    line-height:1.45;outline:none;overflow-y:auto;
+    padding:11px 14px;color:var(--text);font-family:var(--font-body);
+    font-size:16px;line-height:1.45;outline:none;overflow-y:auto;
     transition:border-color .2s,box-shadow .2s}
   textarea::placeholder{color:var(--muted)}
-  textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(241,99,52,.14)}
+  textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--focus-ring)}
   .send-btn{width:44px;height:44px;border-radius:12px;flex-shrink:0;
-    background:linear-gradient(135deg,#c2410c,#f16334);border:none;cursor:pointer;color:#fff;
+    background:linear-gradient(135deg,var(--send-grad-1),var(--send-grad-2));border:none;cursor:pointer;color:#fff;
     display:flex;align-items:center;justify-content:center;font-size:18px;
-    box-shadow:0 4px 16px rgba(241,99,52,.4);transition:transform .15s,box-shadow .15s,opacity .15s;
-    touch-action:manipulation} /* elimina delay de 300ms en móvil */
-  .send-btn:hover:not(:disabled){transform:scale(1.07);box-shadow:0 6px 22px rgba(241,99,52,.55)}
-  .send-btn:active:not(:disabled){transform:scale(.95)}
+    box-shadow:0 4px 16px var(--send-shadow);transition:transform .15s,box-shadow .15s,opacity .15s;touch-action:manipulation}
+  .send-btn:hover:not(:disabled){transform:scale(1.07);box-shadow:0 6px 22px var(--send-shadow-hover)}
   .send-btn:disabled{opacity:.35;cursor:not-allowed}
   .footer-meta{display:flex;justify-content:space-between;align-items:center;margin-top:7px}
   .hint{font-size:.64rem;color:var(--muted)}
-  .clear-btn{background:none;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;
-    font-size:.67rem;cursor:pointer;padding:4px 8px;border-radius:8px;
-    transition:color .2s,background .2s;touch-action:manipulation}
+  .clear-btn{background:none;border:none;color:var(--muted);font-family:var(--font-body);font-size:.67rem;cursor:pointer;padding:4px 8px;border-radius:8px;transition:color .2s,background .2s}
   .clear-btn:hover{color:var(--text);background:var(--surface2)}
 
-  /* ── WELCOME ── */
   .welcome{text-align:center;padding:16px 4px;animation:fadeUp .5s ease both}
   .welcome .icon{font-size:2rem;margin-bottom:8px;display:block}
-  .welcome h2{font-family:'Playfair Display',serif;font-size:1.2rem;margin-bottom:6px;
-    background:linear-gradient(90deg,#e8e9f3,#fb923c);
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  .welcome p{color:var(--muted);font-size:.79rem;line-height:1.6;max-width:100%;margin:0 auto 12px}
-  .steps{text-align:left;display:block;width:100%;
-    background:rgba(241,99,52,.07);border:1px solid var(--border);
-    border-radius:14px;padding:12px 14px;font-size:.76rem;color:var(--muted)}
+  .welcome h2{font-family:var(--font-display);font-size:1.2rem;margin-bottom:6px;background:linear-gradient(90deg,var(--title-grad-start),var(--title-grad-end));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .steps{text-align:left;display:block;width:100%;background:var(--steps-bg);border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-size:.76rem;color:var(--muted)}
   .steps b{color:var(--accent2);display:block;margin-bottom:8px;font-size:.8rem}
   .steps ol{padding-left:15px}
   .steps li{margin:4px 0;line-height:1.5}
-  .steps a{color:var(--accent2);text-decoration:none}
-  .steps a:hover{text-decoration:underline}
-  .word-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
-  .word-card{background:rgba(241,99,52,.08);border:1px solid var(--border);
-    border-radius:9px;padding:9px 4px;font-family:'DM Sans',sans-serif;
-    font-size:.76rem;color:var(--text);cursor:pointer;text-align:center;
-    transition:background .2s,border-color .2s;touch-action:manipulation}
-  .word-card:active{background:rgba(241,99,52,.22);border-color:var(--accent)}
 
-  /* ── LEVEL TABS ── */
-  .level-tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin:8px 0 12px}
-  .level-tab{background:rgba(255,255,255,.04);border:1px solid var(--border);
-    border-radius:9px;padding:7px 2px 6px;cursor:pointer;
-    display:flex;flex-direction:column;align-items:center;gap:2px;
-    transition:background .2s,border-color .2s;font-family:'DM Sans',sans-serif;
-    touch-action:manipulation}
-  .level-tab:active{background:rgba(255,255,255,.1)}
-  .level-tab.active{background:rgba(255,255,255,.1);
-    border-color:var(--lvl-color,var(--accent));
-    box-shadow:0 0 0 2px color-mix(in srgb,var(--lvl-color,var(--accent)) 30%,transparent)}
-  .level-emoji{font-size:1rem;line-height:1}
-  .level-label{font-size:.7rem;font-weight:700;color:var(--lvl-color,var(--text));line-height:1.2}
-  .level-name{font-size:.55rem;color:var(--muted);line-height:1.2;text-align:center}
+  .error-bubble{background:var(--error-bg);border:1px solid var(--error-border);color:var(--error-text);border-radius:14px;padding:11px 14px;font-size:.82rem}
 
-  .refresh-btn{margin-top:10px;background:none;border:none;
-    color:var(--accent2);font-family:'DM Sans',sans-serif;font-size:.72rem;cursor:pointer;
-    padding:6px 0;display:flex;align-items:center;gap:5px;margin-left:auto;margin-right:auto;
-    touch-action:manipulation}
+  #theme-panel{
+    position:fixed;inset:0;z-index:30;display:none;
+    background:rgba(5,8,12,.56);backdrop-filter:blur(6px)
+  }
+  #theme-panel.open{display:block}
+  .theme-sheet{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:min(760px,calc(100vw - 18px));max-height:min(88vh,760px);overflow:auto;
+    background:var(--panel-bg);border:1px solid var(--border);border-radius:16px;
+    box-shadow:0 18px 42px rgba(0,0,0,.35);padding:14px
+  }
+  .theme-sheet-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+  .theme-sheet-title{font-family:var(--font-display);font-size:1rem;color:var(--text)}
+  .theme-close{border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:10px;padding:6px 10px;cursor:pointer}
+  .theme-mode-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .mode-btn{border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:10px;padding:7px 10px;cursor:pointer;font-size:.76rem}
+  .mode-btn.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--focus-ring)}
+  .paper-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .paper-row label{font-size:.76rem;color:var(--text)}
+  .paper-toggle{display:flex;align-items:center;gap:8px}
+  .paper-toggle input{transform:scale(1.1)}
+  .paper-slider{flex:1;min-width:180px;display:flex;align-items:center;gap:8px}
+  .paper-slider input[type="range"]{width:100%}
+  .paper-val{font-size:.74rem;color:var(--muted);min-width:42px;text-align:right}
+  .theme-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .theme-card{border:1px solid var(--border);border-radius:12px;background:var(--surface2);padding:10px;cursor:pointer;text-align:left;color:var(--text)}
+  .theme-card.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--focus-ring)}
+  .theme-card-title{font-size:.84rem;font-weight:700;margin-bottom:4px}
+  .theme-card-meta{font-size:.72rem;color:var(--muted);margin-bottom:8px}
+  .theme-swatches{display:flex;gap:6px}
+  .sw{width:16px;height:16px;border-radius:99px;border:1px solid rgba(255,255,255,.25)}
 
-  .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
-  .chip{background:var(--surface2);border:1px solid var(--border);border-radius:99px;
-    padding:6px 14px;font-size:.74rem;color:var(--muted);cursor:pointer;
-    transition:color .2s,border-color .2s,background .2s;touch-action:manipulation}
-  .chip:active{color:var(--text);border-color:var(--accent);background:rgba(241,99,52,.08)}
-
-  .error-bubble{background:rgba(220,60,60,.1);border:1px solid rgba(220,60,60,.22);
-    color:#ff9e9e;border-radius:14px;padding:11px 14px;font-size:.82rem}
-
-  /* ── MOBILE ≤ 480px (S22 Ultra = ~412px CSS width) ── */
   @media (max-width:480px){
-    /* Panel API: compacto en móvil */
     #key-panel{bottom:calc(56px + env(safe-area-inset-bottom));padding:10px}
     #key-panel label,.key-link{display:none}
-
-    /* Header: selects más compactos */
     header{padding:8px 12px;gap:6px}
     .logo{width:34px;height:34px;border-radius:10px;font-size:16px}
     .brand-text h1{font-size:1rem}
-    .brand-text p{display:none} /* ocultar subtítulo en móvil */
-    select{font-size:.65rem;padding:5px 20px 5px 8px;max-width:100px}
-
-    /* Chat */
+    .brand-text p{display:none}
+    .header-controls{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+    .select-wrap{min-width:0}
+    select{width:100%;max-width:none;font-size:.67rem;padding:6px 22px 6px 8px}
+    .theme-open-btn{width:100%;font-size:.67rem;padding:6px 8px}
+    .theme-sheet{width:min(760px,calc(100vw - 12px));padding:12px;max-height:92vh}
+    .paper-row{gap:8px}
+    .paper-slider{min-width:100%}
+    .theme-grid{grid-template-columns:1fr;gap:8px}
     #chat{padding:12px 10px;gap:12px}
     .bubble{font-size:.83rem;padding:10px 13px}
-
-    /* Footer */
     footer{padding:8px 10px 10px}
     textarea{font-size:16px;padding:10px 13px;min-height:42px}
     .send-btn{width:42px;height:42px}
-    .hint{display:none} /* ocultar hint en móvil, ya se sabe que Enter envía */
-
-    /* Welcome */
-    .welcome{padding:12px 2px}
-    .welcome .icon{font-size:1.7rem;margin-bottom:6px}
-    .welcome h2{font-size:1.1rem}
-    .steps{padding:10px 12px}
-
-    /* Level tabs: más altos y táctiles en móvil */
-    .level-tabs{gap:4px;margin:8px 0 10px}
-    .level-tab{padding:8px 2px 7px;border-radius:8px}
-    .level-emoji{font-size:.95rem}
-    .level-label{font-size:.68rem}
-    .level-name{font-size:.5rem}
-
-    /* Word grid: 4 col caben bien en 412px */
-    .word-grid{gap:5px}
-    .word-card{padding:10px 4px;font-size:.74rem}
+    .hint{display:none}
   }
-
 </style>
 </head>
 <body>
 <div class="app">
-
-  <!-- Header -->
   <header>
     <div class="header-brand">
-      <button class="logo-btn" onclick="toggleKeyPanel()" title="Configuración" aria-label="Configuración">
-        <div class="logo">🗣️</div>
+      <button class="logo-btn" onclick="toggleKeyPanel()" title="ConfiguraciÃ³n" aria-label="ConfiguraciÃ³n">
+        <div class="logo">ðŸ§ </div>
       </button>
       <div class="brand-text">
         <h1>Mi Traductor</h1>
-        <p>INGLÉS ↔ ESPAÑOL · GROQ</p>
+        <p>GROQ + DEEPSEEK</p>
       </div>
     </div>
     <div class="header-controls">
       <div class="select-wrap">
+        <select id="providerSelect">
+          <option value="groq" selected>Groq</option>
+          <option value="deepseek">DeepSeek</option>
+        </select>
+      </div>
+      <div class="select-wrap">
         <select id="modelSelect">
-          <option value="moonshotai/kimi-k2-instruct-0905">Kimi K2 Instruct 0905 ⭐</option>
+          <option value="moonshotai/kimi-k2-instruct-0905" selected>Kimi K2 Instruct 0905 â­</option>
         </select>
       </div>
       <div class="select-wrap">
@@ -289,6 +303,7 @@
           <option value="0.9">Creativo</option>
         </select>
       </div>
+      <button class="theme-open-btn" id="openThemePanelBtn" type="button" title="Abrir configuraciÃ³n de temas" aria-label="Abrir configuraciÃ³n de temas" onclick="toggleThemePanel(true)">ðŸŽ¨ Temas</button>
     </div>
   </header>
 
@@ -296,541 +311,694 @@
 
   <footer>
     <div class="input-row">
-      <textarea id="input" rows="1" placeholder="Escribe en inglés o español…"></textarea>
-      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Enviar">➤</button>
+      <textarea id="input" rows="1" placeholder="Escribe en ingles o espanol..."></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Enviar">âž¤</button>
     </div>
     <div class="footer-meta">
-      <span class="hint">↵ Enviar · Shift+↵ Nueva línea</span>
-      <button class="clear-btn" onclick="clearChat()">🗑 Limpiar</button>
+      <span class="hint">â†µ Enviar Â· Shift+â†µ Nueva lÃ­nea</span>
+      <button class="clear-btn" onclick="clearChat()">ðŸ—‘ Limpiar</button>
     </div>
   </footer>
-
 </div>
 
 <div id="key-panel">
-  <div class="settings-title">⚙️ Configuración</div>
+  <div class="settings-title">âš™ï¸ ConfiguraciÃ³n</div>
 
   <div class="settings-section">
-    <label>🔑 Groq API Key</label>
+    <label>Proveedor activo</label>
     <div class="settings-row">
-      <input type="password" id="apiKeyInput" placeholder="gsk_xxxxxxxxxxxxxxxxxxxxxxxx" oninput="onKeyInput()">
-      <span class="key-status" id="keyStatus">⬜</span>
-      <a class="key-link" href="https://console.groq.com/keys" target="_blank">Obtener gratis →</a>
+      <select id="settingsProviderSelect">
+        <option value="groq" selected>Groq</option>
+        <option value="deepseek">DeepSeek</option>
+      </select>
     </div>
   </div>
 
   <div class="settings-section">
-    <label for="notesInput">📝 Notas</label>
-    <textarea id="notesInput" placeholder="Escribe tus notas aquí…" oninput="onNotesInput()"></textarea>
+    <label>ðŸ”‘ API key del proveedor activo</label>
+    <div class="settings-row">
+      <input type="password" id="apiKeyInput" placeholder="gsk_... o sk-..." oninput="onKeyInput()">
+      <span class="key-status" id="keyStatus">â¬œ</span>
+      <a class="key-link" id="providerKeyLink" href="https://console.groq.com/keys" target="_blank">Obtener â†’</a>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <label>ðŸ” Groq API Key</label>
+    <div class="settings-row">
+      <input type="password" id="groqKeyInput" placeholder="gsk_xxxxxxxxxxxxxxxxxxxxxxxx" oninput="onProviderKeyInput('groq')">
+      <span class="key-status" id="groqKeyStatus">â¬œ</span>
+      <a class="key-link" href="https://console.groq.com/keys" target="_blank">Groq â†’</a>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <label>ðŸ” DeepSeek API Key</label>
+    <div class="settings-row">
+      <input type="password" id="deepseekKeyInput" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxx" oninput="onProviderKeyInput('deepseek')">
+      <span class="key-status" id="deepseekKeyStatus">â¬œ</span>
+      <a class="key-link" href="https://platform.deepseek.com/api_keys" target="_blank">DeepSeek â†’</a>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <label>ðŸ“ Notas persistentes</label>
+    <div class="settings-row">
+      <textarea id="notesInput" placeholder="Objetivo, region, tono o recordatorios para las respuestas." oninput="onNotesInput()"></textarea>
+    </div>
   </div>
 </div>
 
+<div id="theme-panel" aria-hidden="true">
+  <div class="theme-sheet" role="dialog" aria-modal="true" aria-label="ConfiguraciÃ³n de temas">
+    <div class="theme-sheet-head">
+      <div class="theme-sheet-title">ðŸŽ¨ ConfiguraciÃ³n de temas</div>
+      <button class="theme-close" type="button" onclick="toggleThemePanel(false)">Cerrar</button>
+    </div>
+    <div class="theme-mode-row">
+      <button id="modeDarkBtn" class="mode-btn" type="button" onclick="setThemeMode('dark')">ðŸŒ™ Modo oscuro</button>
+      <button id="modeLightBtn" class="mode-btn" type="button" onclick="setThemeMode('light')">â˜€ï¸ Modo claro</button>
+    </div>
+    <div class="paper-row">
+      <div class="paper-toggle">
+        <input id="paperTextureToggle" type="checkbox" onchange="onPaperTextureToggle()">
+        <label for="paperTextureToggle">Textura en fondo</label>
+      </div>
+      <div class="paper-slider">
+        <input id="paperTextureLevel" type="range" min="0" max="100" step="1" value="0" oninput="onPaperTextureLevelInput()">
+        <span id="paperTextureLevelValue" class="paper-val">0%</span>
+      </div>
+    </div>
+    <div class="paper-row">
+      <div class="paper-toggle">
+        <input id="paperTextureGlobalToggle" type="checkbox" onchange="onPaperTextureGlobalToggle()">
+        <label for="paperTextureGlobalToggle">Textura general (toda la pÃ¡gina)</label>
+      </div>
+      <div class="paper-slider">
+        <input id="paperTextureGlobalLevel" type="range" min="0" max="100" step="1" value="0" oninput="onPaperTextureGlobalLevelInput()">
+        <span id="paperTextureGlobalLevelValue" class="paper-val">0%</span>
+      </div>
+    </div>
+    <div id="themeGrid" class="theme-grid"></div>
+  </div>
+</div>
+<div id="paper-global-overlay" aria-hidden="true"></div>
+
 <script>
-const SYSTEM_PROMPT = `Eres «Mi Traductor», un asistente bilingüe (inglés↔español). Detecta automáticamente el idioma de entrada y traduce al otro. Si el usuario especifica otros idiomas, respétalos.
+const SYSTEM_PROMPT = `Eres "Mi Traductor", un asistente bilingue (ingles<->espanol). Detecta automaticamente el idioma del texto y traduce al idioma contrario salvo que el usuario pida otro destino.
 
-Responde SIEMPRE con esta plantilla en Markdown (~250 palabras):
+Responde SIEMPRE con esta plantilla en Markdown:
 
-### 🗣️ Traducción directa
-[traducción principal]
+## Traduccion directa
+[traduccion principal]
 
----
+## Categoria gramatical y nivel CEFR
+[categoria + nivel aproximado]
 
-### 📘 Categoría gramatical y nivel CEFR
-[categoría + nivel aproximado]
-
----
-
-### 📚 Casos de uso
-*(3 ejemplos de sencillo a avanzado, con la palabra/frase en **negrita**)*
+## Casos de uso
 1. ...
 2. ...
 3. ...
 
----
+## Relacion memorable
+[mnemotecnia breve y visual]
 
-### 🧠 Relación inverosímil
-*(mnemotecnia estilo Ramón Campayo, 1–2 frases vividas)*
+## Comparacion y matices
+[sinonimos, falsos amigos, registro, region o tono]
 
----
+## Mini reto
+[pregunta de opcion multiple con cinco opciones sin revelar la correcta]`;
 
-### 🎯 Comparación y matices
-*(sinónimos, falsos amigos, registro, región si aplica)*
-
----
-
-### 🎲 Mini-reto
-Pregunta de opción múltiple con cinco opciones (A–E). NO resaltes la correcta.`;
-
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-
-// Palabras por nivel CEFR — Cambridge frequency list
-const WORDS_BY_LEVEL = {
-  A1: {
-    label:'A1', emoji:'🌱', name:'Principiante',
-    color:'#4ade80',
-    words:["ask","big","buy","can","cat","day","eat","get","go","hat",
-           "help","home","hot","house","job","know","like","live","look","love",
-           "make","man","name","need","new","one","open","pay","put","read",
-           "run","say","see","sit","talk","take","tell","time","use","want",
-           "way","work","write","year","yes","give","come","good","have","think"]
+const PROVIDERS = {
+  groq: {
+    label: 'Groq',
+    modelStorage: 'groq_default_model',
+    keyStorage: 'groq_api_key',
+    modelsUrl: 'https://api.groq.com/openai/v1/models',
+    completionsUrl: 'https://api.groq.com/openai/v1/chat/completions',
+    keyLink: 'https://console.groq.com/keys',
+    placeholder: 'gsk_xxxxxxxxxxxxxxxxxxxxxxxx',
+    defaultModel: 'moonshotai/kimi-k2-instruct-0905',
+    defaults: ['moonshotai/kimi-k2-instruct-0905', 'llama-3.3-70b-versatile', 'deepseek-r1-distill-llama-70b', 'qwen/qwen3-32b']
   },
-  A2: {
-    label:'A2', emoji:'🌿', name:'Básico',
-    color:'#86efac',
-    words:["agree","allow","begin","bring","build","change","choose","close","copy","create",
-           "enjoy","explain","fail","fall","feel","fill","find","finish","fix","follow",
-           "forget","grow","happen","hold","hope","improve","include","invite","join","keep",
-           "learn","leave","let","listen","lose","miss","move","offer","order","plan",
-           "play","prepare","reach","receive","remember","send","show","spend","start","stop",
-           "suggest","travel","try","turn","visit","walk","watch","win","wish","wonder"]
-  },
-  B1: {
-    label:'B1', emoji:'🌻', name:'Intermedio',
-    color:'#fbbf24',
-    words:["achieve","affect","argue","attach","avoid","bother","carry","cause","charge","check",
-           "claim","collect","concern","consider","contain","control","cover","deal","decide","depend",
-           "describe","discover","discuss","divide","doubt","drop","earn","effort","escape","establish",
-           "examine","exist","expect","force","gather","handle","hide","indicate","influence","involve",
-           "judge","lack","lead","level","limit","link","manage","match","measure","mention",
-           "mind","notice","occur","perform","pick","prevent","provide","pull","push","realize",
-           "recognize","reduce","refer","remain","remove","replace","require","respond","rise","search",
-           "serve","share","solve","spread","support","survive","tend","treat","trust","waste"]
-  },
-  B2: {
-    label:'B2', emoji:'🌳', name:'Intermedio alto',
-    color:'#f97316',
-    words:["acknowledge","acquire","adapt","address","administer","advocate","allocate","analyze","anticipate","apply",
-           "assess","assume","attribute","challenge","clarify","collaborate","compensate","compile","conclude","conduct",
-           "confront","consent","construct","contribute","convince","coordinate","decline","define","demonstrate","determine",
-           "distinguish","distribute","elaborate","eliminate","emphasize","encounter","enforce","engage","enhance","evaluate",
-           "execute","expose","extract","facilitate","generate","identify","implement","imply","impose","interpret",
-           "invest","justify","maintain","minimize","negotiate","obtain","outline","overcome","perceive","predict",
-           "prioritize","process","promote","propose","pursue","reinforce","reject","resolve","restrict","reveal",
-           "select","shift","submit","sustain","transform","undertake","utilize","validate","vary","verify"]
-  },
-  C1: {
-    label:'C1', emoji:'🏔️', name:'Avanzado',
-    color:'#ef4444',
-    words:["abdicate","aberrant","alleviate","ambiguous","analogous","articulate","attenuate","augment","autonomous","capitalize",
-           "catalyst","circumvent","coherent","compel","comprehensive","concede","concurrent","consolidate","contemplate","contradict",
-           "conventional","correlate","culminate","deduce","deliberate","deplete","derive","deviate","differentiate","discern",
-           "disparity","encompass","endeavor","erratic","exacerbate","explicit","formulate","groundbreaking","hypothesize","illuminate",
-           "implicit","induce","infer","inherent","initiate","integrate","interconnect","mitigate","nuance","obsolete",
-           "paradox","perpetuate","pragmatic","preceding","preliminary","prevalent","profound","rationale","reconcile","reinstate",
-           "reluctant","rigorous","scrutinize","skeptical","sophisticated","stipulate","subsequent","threshold","transcend","unprecedented"]
-  },
-  C2: {
-    label:'C2', emoji:'🌌', name:'Maestría',
-    color:'#a78bfa',
-    words:["abstruse","acrimonious","adjudicate","ameliorate","anachronism","antithetical","approbation","arcane","assiduous","attenuate",
-           "auspicious","axiom","beleaguer","bifurcate","candor","clandestine","cogent","commensurate","compendium","conjecture",
-           "convoluted","corroborate","covert","dearth","delineate","diatribe","dichotomy","diffidence","dilatory","discordant",
-           "dogmatic","elicit","eloquent","embroil","equivocate","erudite","evocative","excoriate","fallacious","fatuous",
-           "fervent","florid","forbearance","fortuitous","grandiloquent","impeccable","impunity","incisive","indeterminate","inimical",
-           "inscrutable","intransigent","irrefutable","juxtapose","laconic","loquacious","mendacious","meticulous","obfuscate","obstinate",
-           "omniscient","opaque","ostensible","pellucid","peremptory","perfidious","perspicacious","polemic","pragmatic","preclude",
-           "propitious","recalcitrant","reticent","salient","solipsistic","specious","superfluous","tenacious","ubiquitous","venerate"]
+  deepseek: {
+    label: 'DeepSeek',
+    modelStorage: 'deepseek_default_model',
+    keyStorage: 'deepseek_api_key',
+    modelsUrl: 'https://api.deepseek.com/models',
+    completionsUrl: 'https://api.deepseek.com/chat/completions',
+    keyLink: 'https://platform.deepseek.com/api_keys',
+    placeholder: 'sk-xxxxxxxxxxxxxxxxxxxxxxxx',
+    defaultModel: 'deepseek-chat',
+    defaults: ['deepseek-chat', 'deepseek-reasoner']
   }
 };
 
-let selectedLevel = 'B1'; // nivel por defecto
+const SAVED_PROVIDER_KEY = 'llm_provider';
+const SAVED_THEME_KEY = 'ui_theme';
+const SAVED_THEME_MODE_KEY = 'ui_theme_mode';
+const SAVED_PAPER_TEXTURE_ENABLED_KEY = 'ui_paper_texture_enabled';
+const SAVED_PAPER_TEXTURE_LEVEL_KEY = 'ui_paper_texture_level';
+const SAVED_PAPER_TEXTURE_GLOBAL_ENABLED_KEY = 'ui_paper_texture_global_enabled';
+const SAVED_PAPER_TEXTURE_GLOBAL_LEVEL_KEY = 'ui_paper_texture_global_level';
+const SAVED_NOTES_KEY = 'translator_notes';
+const DEFAULT_THEME = 'ember';
+const DEFAULT_THEME_MODE = 'dark';
 
-function getRandomWords(n = 8, level = selectedLevel) {
-  const pool = WORDS_BY_LEVEL[level]?.words ?? WORDS_BY_LEVEL.B1.words;
-  return [...pool].sort(() => Math.random() - 0.5).slice(0, n);
-}
-
-const SUGGESTIONS = getRandomWords(6);
+const WORDS_BY_LEVEL = {
+  A1: { label:'A1', emoji:'ðŸŒ±', name:'Principiante', color:'#4ade80', words:['ask','buy','day','eat','get','go','help','home','hot','job','know','like','look','make','name','need','open','pay','read','run','say','see','sit','take','talk','tell','time','use','want','work'] },
+  A2: { label:'A2', emoji:'ðŸŒ¿', name:'Basico', color:'#86efac', words:['agree','allow','begin','bring','build','change','choose','close','copy','create','enjoy','explain','find','finish','follow','forget','grow','hope','invite','join','learn','listen','move','offer','order','plan','prepare','remember','travel','watch'] },
+  B1: { label:'B1', emoji:'ðŸŒ»', name:'Intermedio', color:'#fbbf24', words:['achieve','affect','argue','avoid','cause','consider','control','decide','depend','describe','discover','discuss','doubt','effort','expect','handle','influence','involve','manage','measure','notice','prevent','provide','recognize','reduce','remain','replace','respond','search','support'] },
+  B2: { label:'B2', emoji:'ðŸŒ³', name:'Intermedio alto', color:'#f97316', words:['acknowledge','adapt','address','analyze','apply','assess','challenge','clarify','collaborate','compile','construct','contribute','convince','coordinate','define','demonstrate','determine','distinguish','elaborate','engage','enhance','evaluate','execute','extract','facilitate','generate','identify','implement','justify','validate'] },
+  C1: { label:'C1', emoji:'ðŸ”ï¸', name:'Avanzado', color:'#ef4444', words:['alleviate','ambiguous','articulate','attenuate','augment','circumvent','coherent','compel','comprehensive','contemplate','correlate','deduce','deviate','differentiate','discern','encompass','explicit','formulate','hypothesize','implicit','infer','integrate','mitigate','nuance','paradox','preliminary','profound','rationale','rigorous','transcend'] },
+  C2: { label:'C2', emoji:'ðŸŒŒ', name:'Maestria', color:'#a78bfa', words:['abstruse','acrimonious','ameliorate','anachronism','antithetical','arcane','assiduous','axiom','candor','cogent','commensurate','conjecture','convoluted','corroborate','delineate','dichotomy','diffidence','eloquent','equivocate','erudite','evocative','fallacious','fortuitous','impeccable','incisive','inscrutable','juxtapose','laconic','obfuscate','perspicacious'] }
+};
 
 let conversationHistory = [];
 let isLoading = false;
-let lastUserMsgEl = null;
-
-marked.setOptions({ breaks:true, gfm:true });
-
-const chatDiv     = document.getElementById('chat');
-const inputEl     = document.getElementById('input');
-const sendBtn     = document.getElementById('sendBtn');
-const keyInput    = document.getElementById('apiKeyInput');
-const keyStatus   = document.getElementById('keyStatus');
-const keyPanel    = document.getElementById('key-panel');
-const modelSelect = document.getElementById('modelSelect');
-const notesInput  = document.getElementById('notesInput');
-
-const DEFAULT_MODEL_FALLBACK = 'moonshotai/kimi-k2-instruct-0905';
-const SAVED_MODEL_KEY = 'groq_default_model';
-const SAVED_NOTES_KEY = 'app_notes';
+let activeRequestController = null;
+let turnCounter = 0;
+let pendingEditTurnId = null;
+let selectedLevel = 'B1';
+let activeProvider = localStorage.getItem(SAVED_PROVIDER_KEY) || 'groq';
+let loadModelsTimer = null;
+let activeThemeId = DEFAULT_THEME;
+let activeThemeMode = DEFAULT_THEME_MODE;
 
 function toggleKeyPanel(force) {
   if (typeof force === 'boolean') keyPanel.classList.toggle('open', force);
   else keyPanel.classList.toggle('open');
 }
 
+function toggleThemePanel(force) {
+  if (!themePanel) return;
+  const open = typeof force === 'boolean' ? force : !themePanel.classList.contains('open');
+  themePanel.classList.toggle('open', open);
+  themePanel.setAttribute('aria-hidden', open ? 'false' : 'true');
+}
+
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') toggleKeyPanel(false);
-});
-
-const SAVED_KEY = localStorage.getItem('groq_api_key') || '';
-const SAVED_DEFAULT_MODEL = localStorage.getItem(SAVED_MODEL_KEY) || '';
-if (SAVED_DEFAULT_MODEL) modelSelect.value = SAVED_DEFAULT_MODEL;
-
-modelSelect.addEventListener('change', () => {
-  const selected = modelSelect.value;
-  if (selected) localStorage.setItem(SAVED_MODEL_KEY, selected);
-});
-
-if (SAVED_KEY) {
-  keyInput.value = SAVED_KEY;
-  loadModels(SAVED_KEY);
-}
-
-notesInput.value = localStorage.getItem(SAVED_NOTES_KEY) || '';
-
-// Categorías para agrupar modelos en el select
-const MODEL_SKIP = ['whisper','tts','guard','safeguard','embed','vision-preview'];
-function shouldSkip(id) { return MODEL_SKIP.some(s => id.toLowerCase().includes(s)); }
-
-function modelLabel(id) {
-  // Nombre legible a partir del id
-  return id
-    .replace(/^(meta-llama|moonshotai|openai|qwen)\//,'')
-    .replace(/-/g,' ')
-    .replace(/\b\w/g, c => c.toUpperCase());
-}
-
-function modelGroup(id) {
-  const l = id.toLowerCase();
-  if (l.includes('llama-4'))       return '🦙 Llama 4';
-  if (l.includes('llama'))         return '🦙 Llama 3';
-  if (l.includes('qwen'))          return '🌊 Qwen';
-  if (l.includes('kimi'))          return '🌙 Kimi';
-  if (l.includes('gpt-oss'))       return '🤖 GPT OSS';
-  if (l.includes('deepseek'))      return '🔍 DeepSeek';
-  if (l.includes('compound'))      return '⚙️ Compound';
-  if (l.includes('gemma'))         return '💎 Gemma';
-  if (l.includes('mixtral'))       return '🔀 Mixtral';
-  return '✦ Otros';
-}
-
-async function loadModels(key) {
-  keyStatus.textContent = '⏳';
-  try {
-    const res = await fetch('https://api.groq.com/openai/v1/models', {
-      headers: { 'Authorization': `Bearer ${key}` }
-    });
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-
-    const models = data.data
-      .filter(m => !shouldSkip(m.id))
-      .sort((a,b) => a.id.localeCompare(b.id));
-
-    // Agrupar por categoría
-    const groups = {};
-    for (const m of models) {
-      const g = modelGroup(m.id);
-      if (!groups[g]) groups[g] = [];
-      groups[g].push(m);
-    }
-
-    const sel = modelSelect;
-    const prev = sel.value;
-    const savedDefault = localStorage.getItem(SAVED_MODEL_KEY) || '';
-    sel.innerHTML = '';
-
-    for (const [groupName, items] of Object.entries(groups)) {
-      const og = document.createElement('optgroup');
-      og.label = groupName;
-      for (const m of items) {
-        const opt = document.createElement('option');
-        opt.value = m.id;
-        opt.textContent = modelLabel(m.id);
-        if (m.id === DEFAULT_MODEL_FALLBACK) opt.textContent += ' ⭐';
-        og.appendChild(opt);
-      }
-      sel.appendChild(og);
-    }
-
-    // Prioridad: modelo guardado > selección previa > default Kimi > primera opción
-    if ([...sel.options].some(o => o.value === savedDefault)) sel.value = savedDefault;
-    else if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
-    else if ([...sel.options].some(o => o.value === DEFAULT_MODEL_FALLBACK)) sel.value = DEFAULT_MODEL_FALLBACK;
-    else if (sel.options.length) sel.value = sel.options[0].value;
-
-    // Persistir siempre la selección activa como predeterminada
-    if (sel.value) localStorage.setItem(SAVED_MODEL_KEY, sel.value);
-
-    keyStatus.textContent = '✅';
-  } catch {
-    keyStatus.textContent = '❌';
+  if (e.key === 'Escape') {
+    toggleKeyPanel(false);
+    toggleThemePanel(false);
   }
+});
+
+themePanel?.addEventListener('click', (e) => {
+  if (e.target === themePanel) toggleThemePanel(false);
+});
+
+function getThemeVars(themeId, mode) {
+  const theme = THEMES[themeId] || THEMES[DEFAULT_THEME];
+  return theme?.modes?.[mode]?.vars || theme?.modes?.[DEFAULT_THEME_MODE]?.vars || {};
 }
 
-let loadModelsTimer = null;
+function updateModeButtons() {
+  modeDarkBtn?.classList.toggle('active', activeThemeMode === 'dark');
+  modeLightBtn?.classList.toggle('active', activeThemeMode === 'light');
+}
+
+function renderThemeCards() {
+  if (!themeGrid) return;
+  const html = Object.entries(THEMES).map(([id, theme]) => {
+    const palette = theme.modes[activeThemeMode]?.vars || theme.modes.dark.vars;
+    return `<button type="button" class="theme-card ${id === activeThemeId ? 'active' : ''}" onclick="setTheme('${id}')"><div class="theme-card-title">${theme.label}</div><div class="theme-card-meta">${activeThemeMode === 'dark' ? 'Oscuro' : 'Claro'}</div><div class="theme-swatches"><span class="sw" style="background:${palette['--accent']}"></span><span class="sw" style="background:${palette['--surface2']}"></span><span class="sw" style="background:${palette['--text']}"></span></div></button>`;
+  }).join('');
+  themeGrid.innerHTML = html;
+}
+
+function applyTheme(themeId, mode) {
+  const id = THEMES[themeId] ? themeId : DEFAULT_THEME;
+  const normalizedMode = mode === 'light' || mode === 'dark' ? mode : DEFAULT_THEME_MODE;
+  activeThemeId = id;
+  activeThemeMode = normalizedMode;
+  const vars = getThemeVars(id, normalizedMode);
+  Object.entries(vars).forEach(([cssVar, value]) => document.documentElement.style.setProperty(cssVar, value));
+  updateModeButtons();
+  renderThemeCards();
+}
+
+function setTheme(themeId) {
+  applyTheme(themeId, activeThemeMode);
+  localStorage.setItem(SAVED_THEME_KEY, activeThemeId);
+}
+
+function setThemeMode(mode) {
+  applyTheme(activeThemeId, mode);
+  localStorage.setItem(SAVED_THEME_MODE_KEY, activeThemeMode);
+}
+
+function applyPaperTexture(enabled, level) {
+  const on = !!enabled;
+  const normalized = Number.isFinite(level) ? Math.max(0, Math.min(100, level)) : 0;
+  const opacity = on ? (normalized / 100) * 0.28 : 0;
+  const contrast = on ? 1 + (normalized / 100) * 0.08 : 1;
+  document.documentElement.style.setProperty('--paper-opacity', opacity.toFixed(3));
+  document.documentElement.style.setProperty('--paper-contrast', contrast.toFixed(3));
+  if (paperTextureToggle) paperTextureToggle.checked = on;
+  if (paperTextureLevel) paperTextureLevel.value = String(normalized);
+  if (paperTextureLevelValue) paperTextureLevelValue.textContent = `${normalized}%`;
+  if (paperTextureLevel) paperTextureLevel.disabled = !on;
+}
+
+function onPaperTextureToggle() {
+  const enabled = !!paperTextureToggle?.checked;
+  const level = parseInt(paperTextureLevel?.value || '0', 10) || 0;
+  applyPaperTexture(enabled, level);
+  localStorage.setItem(SAVED_PAPER_TEXTURE_ENABLED_KEY, enabled ? '1' : '0');
+  localStorage.setItem(SAVED_PAPER_TEXTURE_LEVEL_KEY, String(level));
+}
+
+function onPaperTextureLevelInput() {
+  const level = parseInt(paperTextureLevel?.value || '0', 10) || 0;
+  applyPaperTexture(!!paperTextureToggle?.checked, level);
+  localStorage.setItem(SAVED_PAPER_TEXTURE_LEVEL_KEY, String(level));
+}
+
+function applyPaperTextureGlobal(enabled, level) {
+  const on = !!enabled;
+  const normalized = Number.isFinite(level) ? Math.max(0, Math.min(100, level)) : 0;
+  const opacity = on ? (normalized / 100) * 0.33 : 0;
+  const contrast = on ? 1 + (normalized / 100) * 0.1 : 1;
+  document.documentElement.style.setProperty('--paper-global-opacity', opacity.toFixed(3));
+  document.documentElement.style.setProperty('--paper-global-contrast', contrast.toFixed(3));
+  if (paperTextureGlobalToggle) paperTextureGlobalToggle.checked = on;
+  if (paperTextureGlobalLevel) paperTextureGlobalLevel.value = String(normalized);
+  if (paperTextureGlobalLevelValue) paperTextureGlobalLevelValue.textContent = `${normalized}%`;
+  if (paperTextureGlobalLevel) paperTextureGlobalLevel.disabled = !on;
+}
+
+function onPaperTextureGlobalToggle() {
+  const enabled = !!paperTextureGlobalToggle?.checked;
+  const level = parseInt(paperTextureGlobalLevel?.value || '0', 10) || 0;
+  applyPaperTextureGlobal(enabled, level);
+  localStorage.setItem(SAVED_PAPER_TEXTURE_GLOBAL_ENABLED_KEY, enabled ? '1' : '0');
+  localStorage.setItem(SAVED_PAPER_TEXTURE_GLOBAL_LEVEL_KEY, String(level));
+}
+
+function onPaperTextureGlobalLevelInput() {
+  const level = parseInt(paperTextureGlobalLevel?.value || '0', 10) || 0;
+  applyPaperTextureGlobal(!!paperTextureGlobalToggle?.checked, level);
+  localStorage.setItem(SAVED_PAPER_TEXTURE_GLOBAL_LEVEL_KEY, String(level));
+}
+
+function getProviderConfig(provider = activeProvider) {
+  return PROVIDERS[provider] || PROVIDERS.groq;
+}
+
+function getStoredKey(provider) {
+  return localStorage.getItem(getProviderConfig(provider).keyStorage) || '';
+}
+
+function setStoredKey(provider, value) {
+  const storageKey = getProviderConfig(provider).keyStorage;
+  if (value) localStorage.setItem(storageKey, value);
+  else localStorage.removeItem(storageKey);
+}
+
+function getSavedModel(provider) {
+  return localStorage.getItem(getProviderConfig(provider).modelStorage) || getProviderConfig(provider).defaultModel;
+}
+
+function setSavedModel(provider, model) {
+  if (model) localStorage.setItem(getProviderConfig(provider).modelStorage, model);
+}
+
+function getCurrentKey() {
+  return getStoredKey(activeProvider);
+}
+
+function isKeyValid(provider, value) {
+  if (!value) return false;
+  return provider === 'groq' ? value.startsWith('gsk_') && value.length > 20 : value.startsWith('sk-') && value.length > 20;
+}
+
+function setKeyStatus(el, valid) {
+  if (el) el.textContent = valid ? '✅' : '⬜';
+}
+
+function syncProviderFields() {
+  providerSelect.value = activeProvider;
+  settingsProviderSelect.value = activeProvider;
+  keyInput.value = getCurrentKey();
+  keyInput.placeholder = getProviderConfig(activeProvider).placeholder;
+  providerKeyLink.href = getProviderConfig(activeProvider).keyLink;
+  document.querySelector('.brand-text p').textContent = `${getProviderConfig(activeProvider).label.toUpperCase()} + TEMAS`;
+  setKeyStatus(keyStatus, isKeyValid(activeProvider, keyInput.value.trim()));
+}
+
+function updateStoredKeyStatuses() {
+  setKeyStatus(groqKeyStatus, isKeyValid('groq', getStoredKey('groq')));
+  setKeyStatus(deepseekKeyStatus, isKeyValid('deepseek', getStoredKey('deepseek')));
+  setKeyStatus(keyStatus, isKeyValid(activeProvider, getCurrentKey()));
+}
+
+function humanizeModel(id) {
+  return id.replace(/^(moonshotai|meta-llama|qwen|openai)\//, '').replace(/-/g, ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
+
+async function populateModels(provider, forceReload = false) {
+  const config = getProviderConfig(provider);
+  if (modelSelect.dataset.provider === provider && modelSelect.options.length && !forceReload) return;
+  let models = [...config.defaults];
+  const key = getStoredKey(provider);
+  if (isKeyValid(provider, key)) {
+    try {
+      const res = await fetch(config.modelsUrl, { headers: { Authorization: `Bearer ${key}` } });
+      if (res.ok) {
+        const payload = await res.json();
+        const found = (payload.data || []).map((item) => item.id).filter(Boolean);
+        if (found.length) models = found;
+      }
+    } catch {}
+  }
+  modelSelect.innerHTML = models.map((id) => `<option value="${id}">${humanizeModel(id)}${id === config.defaultModel ? ' ⭐' : ''}</option>`).join('');
+  modelSelect.dataset.provider = provider;
+  const saved = getSavedModel(provider);
+  modelSelect.value = [...modelSelect.options].some((option) => option.value === saved) ? saved : config.defaultModel;
+  setSavedModel(provider, modelSelect.value);
+}
+
+function onProviderKeyInput(provider) {
+  const input = provider === 'groq' ? groqKeyInput : deepseekKeyInput;
+  const value = input.value.trim();
+  setStoredKey(provider, value);
+  if (provider === activeProvider) keyInput.value = value;
+  updateStoredKeyStatuses();
+}
+
 function onKeyInput() {
-  const k = keyInput.value.trim();
-  const valid = k.startsWith('gsk_') && k.length > 20;
-  if (!valid) { keyStatus.textContent = '⬜'; return; }
-  if (k) localStorage.setItem('groq_api_key', k);
-  else   localStorage.removeItem('groq_api_key');
-  // Debounce: esperar 600ms tras dejar de escribir
+  const value = keyInput.value.trim();
+  setStoredKey(activeProvider, value);
+  if (activeProvider === 'groq') groqKeyInput.value = value;
+  if (activeProvider === 'deepseek') deepseekKeyInput.value = value;
+  updateStoredKeyStatuses();
   clearTimeout(loadModelsTimer);
-  loadModelsTimer = setTimeout(() => loadModels(k), 600);
+  if (isKeyValid(activeProvider, value)) loadModelsTimer = setTimeout(() => populateModels(activeProvider, true), 500);
 }
 
 function onNotesInput() {
   localStorage.setItem(SAVED_NOTES_KEY, notesInput.value);
 }
 
-function getKey() { return keyInput.value.trim(); }
+function switchProvider(provider) {
+  activeProvider = provider in PROVIDERS ? provider : 'groq';
+  localStorage.setItem(SAVED_PROVIDER_KEY, activeProvider);
+  syncProviderFields();
+  populateModels(activeProvider);
+}
+
+function randomWords() {
+  const pool = WORDS_BY_LEVEL[selectedLevel]?.words || WORDS_BY_LEVEL.B1.words;
+  return [...pool].sort(() => Math.random() - 0.5).slice(0, 8);
+}
+
+function renderWordCards(words) {
+  return words.map((word) => `<button class="word-card" onclick="quickSend('${word}')">${word}</button>`).join('');
+}
+
+function refreshWords() {
+  const grid = document.getElementById('word-grid');
+  if (grid) grid.innerHTML = renderWordCards(randomWords());
+}
+
+function selectLevel(key) {
+  selectedLevel = key;
+  document.querySelectorAll('.level-tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.level === key));
+  refreshWords();
+}
+
+function quickSend(text) {
+  if (!getCurrentKey()) {
+    toggleKeyPanel(true);
+    keyInput.focus();
+    return;
+  }
+  inputEl.value = text;
+  sendMessage();
+}
+
+function showWelcome() {
+  const welcome = document.createElement('div');
+  welcome.className = 'welcome';
+  welcome.innerHTML = `
+    <span class="icon">⚡</span>
+    <h2>Mi Traductor · ${getProviderConfig(activeProvider).label}</h2>
+    <div class="steps">
+      <b>📚 Palabras para practicar hoy</b>
+      <div class="level-tabs">
+        ${Object.entries(WORDS_BY_LEVEL).map(([key, level]) => `<button class="level-tab ${key === selectedLevel ? 'active' : ''}" data-level="${key}" onclick="selectLevel('${key}')" style="--lvl-color:${level.color}"><span class="level-emoji">${level.emoji}</span><span class="level-label">${level.label}</span><span class="level-name">${level.name}</span></button>`).join('')}
+      </div>
+      <div class="word-grid" id="word-grid">${renderWordCards(randomWords())}</div>
+      <button onclick="refreshWords()" class="refresh-btn">🔄 Otras palabras</button>
+    </div>`;
+  chatDiv.appendChild(welcome);
+}
+
+function scrollBottom(force = false) {
+  const dist = chatDiv.scrollHeight - chatDiv.scrollTop - chatDiv.clientHeight;
+  if (force || dist < 80) chatDiv.scrollTop = chatDiv.scrollHeight;
+}
+
+function closeAllMessageActions() {
+  chatDiv.querySelectorAll('.msg.actions-open').forEach((el) => el.classList.remove('actions-open'));
+}
+
+chatDiv.addEventListener('click', (e) => {
+  const actionBtn = e.target.closest('.msg-action-btn');
+  if (actionBtn) return;
+  const msg = e.target.closest('.msg');
+  if (!msg || msg.id === 'typing-row') return;
+  const alreadyOpen = msg.classList.contains('actions-open');
+  closeAllMessageActions();
+  if (!alreadyOpen) msg.classList.add('actions-open');
+});
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.msg')) closeAllMessageActions();
+});
+
+function setSendButtonState(loading) {
+  sendBtn.disabled = false;
+  sendBtn.textContent = loading ? '⏹' : '➤';
+  sendBtn.title = loading ? 'Detener' : 'Enviar';
+}
+
+function clearEditingState() {
+  pendingEditTurnId = null;
+  document.querySelectorAll('.msg.editing').forEach((el) => el.classList.remove('editing'));
+}
+
+function buildConversationHistoryFromDOM() {
+  const msgs = [...chatDiv.querySelectorAll('.msg[data-role]')].filter((el) => el.id !== 'typing-row').sort((a, b) => Number(a.dataset.turnId || 0) - Number(b.dataset.turnId || 0));
+  conversationHistory = msgs.map((el) => ({ role: el.dataset.role === 'ai' ? 'assistant' : 'user', content: String(el.dataset.rawText || '') }));
+}
+
+function getNextTurnId() {
+  turnCounter = Math.max(turnCounter + 1, Date.now());
+  return String(turnCounter);
+}
+
+function getTurnElements(turnId) {
+  return {
+    userEl: chatDiv.querySelector(`.msg[data-role="user"][data-turn-id="${turnId}"]`),
+    aiEl: chatDiv.querySelector(`.msg[data-role="ai"][data-turn-id="${turnId}"]`)
+  };
+}
+
+function copyMessage(btn) {
+  const msg = btn.closest('.msg');
+  navigator.clipboard?.writeText(msg?.dataset?.rawText || '').catch(() => {});
+}
+
+function editMessage(btn) {
+  const msg = btn.closest('.msg');
+  const turnId = msg?.dataset?.turnId;
+  if (!turnId) return;
+  const { userEl, aiEl } = getTurnElements(turnId);
+  const text = userEl?.dataset?.rawText || msg?.dataset?.rawText || '';
+  if (!text) return;
+  clearEditingState();
+  pendingEditTurnId = turnId;
+  userEl?.classList.add('editing');
+  aiEl?.classList.add('editing');
+  inputEl.value = text;
+  inputEl.focus();
+  inputEl.style.height = 'auto';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+}
+
+function retryMessage(btn) {
+  editMessage(btn);
+  sendMessage();
+}
+
+function buildMessageActions() {
+  return `<div class="msg-actions"><button class="msg-action-btn" onclick="retryMessage(this)">Reintentar</button><button class="msg-action-btn" onclick="copyMessage(this)">Copiar</button><button class="msg-action-btn" onclick="editMessage(this)">Editar</button></div>`;
+}
+
+function escapeHtml(text) {
+  return String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+}
+
+function addUserBubble(text, turnId = getNextTurnId()) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'msg user';
+  wrapper.dataset.role = 'user';
+  wrapper.dataset.turnId = String(turnId);
+  wrapper.dataset.rawText = text;
+  wrapper.innerHTML = `<div class="avatar usr">👤</div><div class="msg-content"><div class="bubble user">${escapeHtml(text)}</div>${buildMessageActions()}</div>`;
+  chatDiv.appendChild(wrapper);
+  scrollBottom(true);
+}
+
+function addAIBubble(markdownText, turnId = getNextTurnId()) {
+  const raw = String(markdownText || 'Sin respuesta.');
+  const wrapper = document.createElement('div');
+  wrapper.className = 'msg';
+  wrapper.dataset.role = 'ai';
+  wrapper.dataset.turnId = String(turnId);
+  wrapper.dataset.rawText = raw;
+  wrapper.innerHTML = `<div class="avatar ai">🗣️</div><div class="msg-content"><div class="bubble ai">${marked.parse(raw)}</div>${buildMessageActions()}</div>`;
+  chatDiv.appendChild(wrapper);
+  scrollBottom();
+}
+
+function addTypingRow() {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'msg';
+  wrapper.id = 'typing-row';
+  wrapper.innerHTML = `<div class="avatar ai">🗣️</div><div class="msg-content"><div class="bubble ai"><div class="typing-wrap"><span></span><span></span><span></span></div></div></div>`;
+  chatDiv.appendChild(wrapper);
+  scrollBottom(true);
+}
+
+async function callProvider(messages, model, temperature, signal) {
+  const key = getCurrentKey();
+  if (!isKeyValid(activeProvider, key)) throw new Error(`Falta API key valida de ${getProviderConfig(activeProvider).label}.`);
+  const res = await fetch(getProviderConfig(activeProvider).completionsUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+    body: JSON.stringify({ model, temperature, max_tokens: 1500, messages }),
+    signal
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error?.message || `Error HTTP ${res.status}`);
+  return data?.choices?.[0]?.message?.content || '';
+}
+
+function stopGeneration() {
+  if (!isLoading) return;
+  activeRequestController?.abort();
+}
+
+async function sendMessage(forcedText = '') {
+  const text = forcedText || inputEl.value.trim();
+  if (isLoading) { stopGeneration(); return; }
+  if (!text) return;
+  if (!getCurrentKey()) {
+    toggleKeyPanel(true);
+    keyInput.focus();
+    return;
+  }
+
+  const editingTurnId = pendingEditTurnId;
+  let userEl = null;
+  let aiEl = null;
+  if (editingTurnId) {
+    ({ userEl, aiEl } = getTurnElements(editingTurnId));
+    if (userEl) {
+      userEl.dataset.rawText = text;
+      const userBubble = userEl.querySelector('.bubble.user');
+      if (userBubble) userBubble.innerHTML = escapeHtml(text);
+    }
+    if (aiEl) aiEl.remove();
+  }
+
+  isLoading = true;
+  activeRequestController = new AbortController();
+  setSendButtonState(true);
+  inputEl.value = '';
+  inputEl.style.height = 'auto';
+
+  const turnId = editingTurnId || getNextTurnId();
+  if (!editingTurnId) addUserBubble(text, turnId);
+  addTypingRow();
+  buildConversationHistoryFromDOM();
+
+  const notes = notesInput.value.trim();
+  const messages = [
+    { role:'system', content: `${SYSTEM_PROMPT}${notes ? `\n\nNotas persistentes del usuario:\n${notes}` : ''}` },
+    ...conversationHistory
+  ];
+
+  try {
+    const finalText = await callProvider(messages, modelSelect.value, parseFloat(document.getElementById('tempSelect').value), activeRequestController.signal);
+    document.getElementById('typing-row')?.remove();
+    addAIBubble(finalText || 'Sin respuesta del modelo.', turnId);
+    clearEditingState();
+    buildConversationHistoryFromDOM();
+  } catch (err) {
+    document.getElementById('typing-row')?.remove();
+    if (String(err?.name || '') === 'AbortError') {
+      addAIBubble('⏹ Respuesta detenida por el usuario.', turnId);
+      clearEditingState();
+      buildConversationHistoryFromDOM();
+    } else {
+      const errorBubble = document.createElement('div');
+      errorBubble.className = 'error-bubble';
+      errorBubble.textContent = `❌ ${err?.message || String(err)}`;
+      chatDiv.appendChild(errorBubble);
+      scrollBottom();
+    }
+  } finally {
+    isLoading = false;
+    activeRequestController = null;
+    setSendButtonState(false);
+  }
+}
+
+function clearChat() {
+  chatDiv.innerHTML = '';
+  conversationHistory = [];
+  clearEditingState();
+  showWelcome();
+}
 
 inputEl.addEventListener('input', () => {
   inputEl.style.height = 'auto';
   inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
 });
-inputEl.addEventListener('keydown', e => {
+
+inputEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
 
-// Scroll solo si el usuario ya estaba al fondo (±80px de margen)
-function scrollBottom(force = false) {
-  const distFromBottom = chatDiv.scrollHeight - chatDiv.scrollTop - chatDiv.clientHeight;
-  if (force || distFromBottom < 80) {
-    chatDiv.scrollTop = chatDiv.scrollHeight;
-  }
-}
+providerSelect.addEventListener('change', () => switchProvider(providerSelect.value));
+settingsProviderSelect.addEventListener('change', () => switchProvider(settingsProviderSelect.value));
+modelSelect.addEventListener('change', () => setSavedModel(activeProvider, modelSelect.value));
 
-function addUserBubble(text) {
-  const w = document.createElement('div');
-  w.className = 'msg user';
-  w.innerHTML = `<div class="avatar usr">👤</div>
-    <div class="bubble user">${text.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>`;
-  chatDiv.appendChild(w);
-  lastUserMsgEl = w;
-  scrollBottom(true); // forzar: el usuario acaba de enviar
-}
+groqKeyInput.value = getStoredKey('groq');
+deepseekKeyInput.value = getStoredKey('deepseek');
+notesInput.value = localStorage.getItem(SAVED_NOTES_KEY) || '';
 
-function addTypingRow() {
-  const w = document.createElement('div');
-  w.className = 'msg'; w.id = 'typing-row';
-  w.innerHTML = `<div class="avatar ai">🗣️</div>
-    <div class="bubble ai"><div class="typing-wrap"><span></span><span></span><span></span></div></div>`;
-  chatDiv.appendChild(w); scrollBottom(true); // forzar: mostrar que está escribiendo
-}
+const savedTheme = localStorage.getItem(SAVED_THEME_KEY) || DEFAULT_THEME;
+const savedThemeMode = localStorage.getItem(SAVED_THEME_MODE_KEY) || DEFAULT_THEME_MODE;
+const savedPaperEnabled = localStorage.getItem(SAVED_PAPER_TEXTURE_ENABLED_KEY) === '1';
+const savedPaperLevel = parseInt(localStorage.getItem(SAVED_PAPER_TEXTURE_LEVEL_KEY) || '0', 10) || 0;
+const savedPaperGlobalEnabled = localStorage.getItem(SAVED_PAPER_TEXTURE_GLOBAL_ENABLED_KEY) === '1';
+const savedPaperGlobalLevel = parseInt(localStorage.getItem(SAVED_PAPER_TEXTURE_GLOBAL_LEVEL_KEY) || '0', 10) || 0;
 
-function alignLastUserToTop(smooth = false) {
-  if (!lastUserMsgEl) return;
-
-  const userRect = lastUserMsgEl.getBoundingClientRect();
-  const chatRect = chatDiv.getBoundingClientRect();
-  const deltaTop = userRect.top - chatRect.top;
-  const targetTop = chatDiv.scrollTop + deltaTop;
-  const maxTop = chatDiv.scrollHeight - chatDiv.clientHeight;
-  const clampedTop = Math.max(0, Math.min(targetTop, maxTop));
-
-  if (smooth) chatDiv.scrollTo({ top: clampedTop, behavior: 'smooth' });
-  else chatDiv.scrollTop = clampedTop;
-}
-
-function createStreamBubble() {
-  const w = document.createElement('div');
-  w.className = 'msg';
-  const b = document.createElement('div');
-  b.className = 'bubble ai streaming-cursor'; b.id = 'stream-bub';
-  w.innerHTML = `<div class="avatar ai">🗣️</div>`;
-  w.appendChild(b); chatDiv.appendChild(w);
-
-  // Primer ajuste al aparecer la respuesta
-  setTimeout(() => alignLastUserToTop(true), 60);
-
-  return b;
-}
-
-// ── Groq streaming via fetch + SSE ──
-async function callGroqStream(messages, model, temperature, onChunk) {
-  const key = getKey();
-  if (!key) throw new Error('Pega tu API key de Groq arriba (gratis en console.groq.com)');
-
-  const res = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${key}`
-    },
-    body: JSON.stringify({
-      model,
-      temperature,
-      max_tokens: 1400,
-      stream: true,
-      messages
-    })
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Error HTTP ${res.status}`);
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop(); // línea incompleta al final
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed === 'data: [DONE]') continue;
-      if (!trimmed.startsWith('data: ')) continue;
-      try {
-        const json = JSON.parse(trimmed.slice(6));
-        const chunk = json.choices?.[0]?.delta?.content ?? '';
-        if (chunk) onChunk(chunk);
-      } catch { /* ignorar líneas malformadas */ }
-    }
-  }
-}
-
-async function sendMessage() {
-  const text = inputEl.value.trim();
-  if (!text || isLoading) return;
-
-  if (!getKey()) {
-    toggleKeyPanel(true);
-    keyInput.focus();
-    keyInput.style.borderColor = 'var(--accent)';
-    setTimeout(() => keyInput.style.borderColor = '', 1500);
-    return;
-  }
-
-  isLoading = true; sendBtn.disabled = true;
-  inputEl.value = ''; inputEl.style.height = 'auto';
-
-  addUserBubble(text);
-  conversationHistory.push({ role:'user', content:text });
-  addTypingRow();
-
-  const model = document.getElementById('modelSelect').value;
-  const temp  = parseFloat(document.getElementById('tempSelect').value);
-  const messages = [
-    { role:'system', content: SYSTEM_PROMPT },
-    ...conversationHistory
-  ];
-
-  let fullText = '';
-  let streamBub = null;
-  let firstChunk = true;
-
-  try {
-    await callGroqStream(messages, model, temp, (chunk) => {
-      if (firstChunk) {
-        document.getElementById('typing-row')?.remove();
-        streamBub = createStreamBubble();
-        firstChunk = false;
-      }
-      fullText += chunk;
-      streamBub.innerHTML = marked.parse(fullText);
-      // Mantener el último mensaje del usuario pegado arriba mientras crece la respuesta
-      alignLastUserToTop(false);
-    });
-
-    if (streamBub) {
-      streamBub.classList.remove('streaming-cursor');
-      streamBub.innerHTML = marked.parse(fullText);
-    }
-
-    // Si no llegó nada
-    if (firstChunk) {
-      document.getElementById('typing-row')?.remove();
-      const w = document.createElement('div');
-      w.className = 'msg';
-      w.innerHTML = `<div class="avatar ai">🗣️</div><div class="bubble ai">⚠️ Sin respuesta del modelo.</div>`;
-      chatDiv.appendChild(w); scrollBottom();
-    }
-
-    if (fullText) conversationHistory.push({ role:'assistant', content:fullText });
-
-  } catch(err) {
-    document.getElementById('typing-row')?.remove();
-    streamBub?.classList.remove('streaming-cursor');
-    const e = document.createElement('div');
-    e.className = 'error-bubble';
-    e.textContent = `❌ ${err?.message ?? String(err)}`;
-    chatDiv.appendChild(e);
-    conversationHistory.pop();
-    scrollBottom();
-  } finally {
-    isLoading = false; sendBtn.disabled = false;
-    // No llamamos inputEl.focus() para no abrir el teclado en móvil
-  }
-}
-
-function clearChat() {
-  chatDiv.innerHTML = ''; conversationHistory = []; showWelcome();
-}
-
-function showWelcome() {
-  const w = document.createElement('div');
-  w.className = 'welcome';
-  w.id = 'welcome-block';
-  w.innerHTML = `
-    <span class="icon">⚡</span>
-    <h2>Mi Traductor · Groq</h2>
-    <div class="steps">
-      <b>📚 Palabras para practicar hoy</b>
-
-      <div class="level-tabs" id="level-tabs">
-        ${Object.entries(WORDS_BY_LEVEL).map(([key, lvl]) => `
-          <button class="level-tab ${key === selectedLevel ? 'active' : ''}"
-            onclick="selectLevel('${key}')"
-            style="--lvl-color:${lvl.color}">
-            <span class="level-emoji">${lvl.emoji}</span>
-            <span class="level-label">${lvl.label}</span>
-            <span class="level-name">${lvl.name}</span>
-          </button>`).join('')}
-      </div>
-
-      <div class="word-grid" id="word-grid">
-        ${renderWordCards(getRandomWords(8))}
-      </div>
-
-      <button onclick="refreshWords()" class="refresh-btn">🔄 Otras palabras</button>
-    </div>`;
-  chatDiv.appendChild(w);
-}
-
-function renderWordCards(words) {
-  return words.map(word =>
-    `<button class="word-card" onclick="quickSend('${word}')">${word}</button>`
-  ).join('');
-}
-
-function selectLevel(key) {
-  selectedLevel = key;
-  // Actualizar tabs
-  document.querySelectorAll('.level-tab').forEach(t => {
-    t.classList.toggle('active', t.getAttribute('onclick').includes(`'${key}'`));
-  });
-  // Actualizar grid y chips
-  refreshWords();
-}
-
-function refreshWords() {
-  const grid = document.getElementById('word-grid');
-  if (grid) grid.innerHTML = renderWordCards(getRandomWords(8));
-}
-
-function quickSend(text) {
-  if (!getKey()) { toggleKeyPanel(true); keyInput.focus(); return; }
-  inputEl.value = text; sendMessage();
-}
-
+applyTheme(savedTheme, savedThemeMode);
+applyPaperTexture(savedPaperEnabled, savedPaperLevel);
+applyPaperTextureGlobal(savedPaperGlobalEnabled, savedPaperGlobalLevel);
+syncProviderFields();
+updateStoredKeyStatuses();
+populateModels(activeProvider);
 showWelcome();
+setSendButtonState(false);
 inputEl.focus();
 </script>
 </body>
 </html>
+
