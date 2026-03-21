@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Mi Traductor âœ¦ Groq + DeepSeek</title>
+<title>Mi Traductor ✦ Groq + DeepSeek</title>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=DM+Sans:wght@300;400;500;600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
@@ -132,7 +132,7 @@
   .brand-text p{font-size:.62rem;color:var(--muted);letter-spacing:.04em}
   .header-controls{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
   .select-wrap{position:relative}
-  .select-wrap::after{content:'â–¾';position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:10px;pointer-events:none}
+  .select-wrap::after{content:'▾';position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:10px;pointer-events:none}
   select{appearance:none;background:var(--surface2);color:var(--text);
     border:1px solid var(--border);border-radius:10px;padding:6px 24px 6px 9px;
     font-family:var(--font-body);font-size:.68rem;cursor:pointer;outline:none;
@@ -276,8 +276,8 @@
 <div class="app">
   <header>
     <div class="header-brand">
-      <button class="logo-btn" onclick="toggleKeyPanel()" title="ConfiguraciÃ³n" aria-label="ConfiguraciÃ³n">
-        <div class="logo">ðŸ§ </div>
+      <button class="logo-btn" onclick="toggleKeyPanel()" title="Configuración" aria-label="Configuración">
+        <div class="logo">🧠</div>
       </button>
       <div class="brand-text">
         <h1>Mi Traductor</h1>
@@ -293,7 +293,7 @@
       </div>
       <div class="select-wrap">
         <select id="modelSelect">
-          <option value="moonshotai/kimi-k2-instruct-0905" selected>Kimi K2 Instruct 0905 â­</option>
+          <option value="moonshotai/kimi-k2-instruct-0905" selected>Kimi K2 Instruct 0905 ⭐</option>
         </select>
       </div>
       <div class="select-wrap">
@@ -303,7 +303,7 @@
           <option value="0.9">Creativo</option>
         </select>
       </div>
-      <button class="theme-open-btn" id="openThemePanelBtn" type="button" title="Abrir configuraciÃ³n de temas" aria-label="Abrir configuraciÃ³n de temas" onclick="toggleThemePanel(true)">ðŸŽ¨ Temas</button>
+      <button class="theme-open-btn" id="openThemePanelBtn" type="button" title="Abrir configuración de temas" aria-label="Abrir configuración de temas" onclick="toggleThemePanel(true)">🎨 Temas</button>
     </div>
   </header>
 
@@ -311,18 +311,18 @@
 
   <footer>
     <div class="input-row">
-      <textarea id="input" rows="1" placeholder="Escribe en ingles o espanol..."></textarea>
-      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Enviar">âž¤</button>
+      <textarea id="input" rows="1" placeholder="Escribe en inglés o español..."></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Enviar">➤</button>
     </div>
     <div class="footer-meta">
-      <span class="hint">â†µ Enviar Â· Shift+â†µ Nueva lÃ­nea</span>
-      <button class="clear-btn" onclick="clearChat()">ðŸ—‘ Limpiar</button>
+      <span class="hint">↵ Enviar · Shift+↵ Nueva línea</span>
+      <button class="clear-btn" onclick="clearChat()">🗑 Limpiar</button>
     </div>
   </footer>
 </div>
 
 <div id="key-panel">
-  <div class="settings-title">âš™ï¸ ConfiguraciÃ³n</div>
+  <div class="settings-title">⚙️ Configuración</div>
 
   <div class="settings-section">
     <label>Proveedor activo</label>
@@ -335,49 +335,49 @@
   </div>
 
   <div class="settings-section">
-    <label>ðŸ”‘ API key del proveedor activo</label>
+    <label>🔑 API key del proveedor activo</label>
     <div class="settings-row">
       <input type="password" id="apiKeyInput" placeholder="gsk_... o sk-..." oninput="onKeyInput()">
-      <span class="key-status" id="keyStatus">â¬œ</span>
-      <a class="key-link" id="providerKeyLink" href="https://console.groq.com/keys" target="_blank">Obtener â†’</a>
+      <span class="key-status" id="keyStatus">⬜</span>
+      <a class="key-link" id="providerKeyLink" href="https://console.groq.com/keys" target="_blank">Obtener →</a>
     </div>
   </div>
 
   <div class="settings-section">
-    <label>ðŸ” Groq API Key</label>
+    <label>🔐 Groq API Key</label>
     <div class="settings-row">
       <input type="password" id="groqKeyInput" placeholder="gsk_xxxxxxxxxxxxxxxxxxxxxxxx" oninput="onProviderKeyInput('groq')">
-      <span class="key-status" id="groqKeyStatus">â¬œ</span>
-      <a class="key-link" href="https://console.groq.com/keys" target="_blank">Groq â†’</a>
+      <span class="key-status" id="groqKeyStatus">⬜</span>
+      <a class="key-link" href="https://console.groq.com/keys" target="_blank">Groq →</a>
     </div>
   </div>
 
   <div class="settings-section">
-    <label>ðŸ” DeepSeek API Key</label>
+    <label>🔐 DeepSeek API Key</label>
     <div class="settings-row">
       <input type="password" id="deepseekKeyInput" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxx" oninput="onProviderKeyInput('deepseek')">
-      <span class="key-status" id="deepseekKeyStatus">â¬œ</span>
-      <a class="key-link" href="https://platform.deepseek.com/api_keys" target="_blank">DeepSeek â†’</a>
+      <span class="key-status" id="deepseekKeyStatus">⬜</span>
+      <a class="key-link" href="https://platform.deepseek.com/api_keys" target="_blank">DeepSeek →</a>
     </div>
   </div>
 
   <div class="settings-section">
-    <label>ðŸ“ Notas persistentes</label>
+    <label>📝 Notas persistentes</label>
     <div class="settings-row">
-      <textarea id="notesInput" placeholder="Objetivo, region, tono o recordatorios para las respuestas." oninput="onNotesInput()"></textarea>
+      <textarea id="notesInput" placeholder="Objetivo, región, tono o recordatorios para las respuestas." oninput="onNotesInput()"></textarea>
     </div>
   </div>
 </div>
 
 <div id="theme-panel" aria-hidden="true">
-  <div class="theme-sheet" role="dialog" aria-modal="true" aria-label="ConfiguraciÃ³n de temas">
+  <div class="theme-sheet" role="dialog" aria-modal="true" aria-label="Configuración de temas">
     <div class="theme-sheet-head">
-      <div class="theme-sheet-title">ðŸŽ¨ ConfiguraciÃ³n de temas</div>
+      <div class="theme-sheet-title">🎨 Configuración de temas</div>
       <button class="theme-close" type="button" onclick="toggleThemePanel(false)">Cerrar</button>
     </div>
     <div class="theme-mode-row">
-      <button id="modeDarkBtn" class="mode-btn" type="button" onclick="setThemeMode('dark')">ðŸŒ™ Modo oscuro</button>
-      <button id="modeLightBtn" class="mode-btn" type="button" onclick="setThemeMode('light')">â˜€ï¸ Modo claro</button>
+      <button id="modeDarkBtn" class="mode-btn" type="button" onclick="setThemeMode('dark')">🌙 Modo oscuro</button>
+      <button id="modeLightBtn" class="mode-btn" type="button" onclick="setThemeMode('light')">☀️ Modo claro</button>
     </div>
     <div class="paper-row">
       <div class="paper-toggle">
@@ -392,7 +392,7 @@
     <div class="paper-row">
       <div class="paper-toggle">
         <input id="paperTextureGlobalToggle" type="checkbox" onchange="onPaperTextureGlobalToggle()">
-        <label for="paperTextureGlobalToggle">Textura general (toda la pÃ¡gina)</label>
+        <label for="paperTextureGlobalToggle">Textura general (toda la página)</label>
       </div>
       <div class="paper-slider">
         <input id="paperTextureGlobalLevel" type="range" min="0" max="100" step="1" value="0" oninput="onPaperTextureGlobalLevelInput()">
@@ -405,29 +405,29 @@
 <div id="paper-global-overlay" aria-hidden="true"></div>
 
 <script>
-const SYSTEM_PROMPT = `Eres "Mi Traductor", un asistente bilingue (ingles<->espanol). Detecta automaticamente el idioma del texto y traduce al idioma contrario salvo que el usuario pida otro destino.
+const SYSTEM_PROMPT = `Eres "Mi Traductor", un asistente bilingüe (inglés<->español). Detecta automáticamente el idioma del texto y traduce al idioma contrario salvo que el usuario pida otro destino.
 
 Responde SIEMPRE con esta plantilla en Markdown:
 
-## Traduccion directa
-[traduccion principal]
+## Traducción directa
+[traducción principal]
 
-## Categoria gramatical y nivel CEFR
-[categoria + nivel aproximado]
+## Categoría gramatical y nivel CEFR
+[categoría + nivel aproximado]
 
 ## Casos de uso
 1. ...
 2. ...
 3. ...
 
-## Relacion memorable
+## Relación memorable
 [mnemotecnia breve y visual]
 
-## Comparacion y matices
-[sinonimos, falsos amigos, registro, region o tono]
+## Comparación y matices
+[sinónimos, falsos amigos, registro, región o tono]
 
 ## Mini reto
-[pregunta de opcion multiple con cinco opciones sin revelar la correcta]`;
+[pregunta de opción múltiple con cinco opciones sin revelar la correcta]`;
 
 const PROVIDERS = {
   groq: {
@@ -466,12 +466,12 @@ const DEFAULT_THEME = 'ember';
 const DEFAULT_THEME_MODE = 'dark';
 
 const WORDS_BY_LEVEL = {
-  A1: { label:'A1', emoji:'ðŸŒ±', name:'Principiante', color:'#4ade80', words:['ask','buy','day','eat','get','go','help','home','hot','job','know','like','look','make','name','need','open','pay','read','run','say','see','sit','take','talk','tell','time','use','want','work'] },
-  A2: { label:'A2', emoji:'ðŸŒ¿', name:'Basico', color:'#86efac', words:['agree','allow','begin','bring','build','change','choose','close','copy','create','enjoy','explain','find','finish','follow','forget','grow','hope','invite','join','learn','listen','move','offer','order','plan','prepare','remember','travel','watch'] },
-  B1: { label:'B1', emoji:'ðŸŒ»', name:'Intermedio', color:'#fbbf24', words:['achieve','affect','argue','avoid','cause','consider','control','decide','depend','describe','discover','discuss','doubt','effort','expect','handle','influence','involve','manage','measure','notice','prevent','provide','recognize','reduce','remain','replace','respond','search','support'] },
-  B2: { label:'B2', emoji:'ðŸŒ³', name:'Intermedio alto', color:'#f97316', words:['acknowledge','adapt','address','analyze','apply','assess','challenge','clarify','collaborate','compile','construct','contribute','convince','coordinate','define','demonstrate','determine','distinguish','elaborate','engage','enhance','evaluate','execute','extract','facilitate','generate','identify','implement','justify','validate'] },
-  C1: { label:'C1', emoji:'ðŸ”ï¸', name:'Avanzado', color:'#ef4444', words:['alleviate','ambiguous','articulate','attenuate','augment','circumvent','coherent','compel','comprehensive','contemplate','correlate','deduce','deviate','differentiate','discern','encompass','explicit','formulate','hypothesize','implicit','infer','integrate','mitigate','nuance','paradox','preliminary','profound','rationale','rigorous','transcend'] },
-  C2: { label:'C2', emoji:'ðŸŒŒ', name:'Maestria', color:'#a78bfa', words:['abstruse','acrimonious','ameliorate','anachronism','antithetical','arcane','assiduous','axiom','candor','cogent','commensurate','conjecture','convoluted','corroborate','delineate','dichotomy','diffidence','eloquent','equivocate','erudite','evocative','fallacious','fortuitous','impeccable','incisive','inscrutable','juxtapose','laconic','obfuscate','perspicacious'] }
+  A1: { label:'A1', emoji:'🌱', name:'Principiante', color:'#4ade80', words:['ask','buy','day','eat','get','go','help','home','hot','job','know','like','look','make','name','need','open','pay','read','run','say','see','sit','take','talk','tell','time','use','want','work'] },
+  A2: { label:'A2', emoji:'🌿', name:'Básico', color:'#86efac', words:['agree','allow','begin','bring','build','change','choose','close','copy','create','enjoy','explain','find','finish','follow','forget','grow','hope','invite','join','learn','listen','move','offer','order','plan','prepare','remember','travel','watch'] },
+  B1: { label:'B1', emoji:'🌻', name:'Intermedio', color:'#fbbf24', words:['achieve','affect','argue','avoid','cause','consider','control','decide','depend','describe','discover','discuss','doubt','effort','expect','handle','influence','involve','manage','measure','notice','prevent','provide','recognize','reduce','remain','replace','respond','search','support'] },
+  B2: { label:'B2', emoji:'🌳', name:'Intermedio alto', color:'#f97316', words:['acknowledge','adapt','address','analyze','apply','assess','challenge','clarify','collaborate','compile','construct','contribute','convince','coordinate','define','demonstrate','determine','distinguish','elaborate','engage','enhance','evaluate','execute','extract','facilitate','generate','identify','implement','justify','validate'] },
+  C1: { label:'C1', emoji:'🏔️', name:'Avanzado', color:'#ef4444', words:['alleviate','ambiguous','articulate','attenuate','augment','circumvent','coherent','compel','comprehensive','contemplate','correlate','deduce','deviate','differentiate','discern','encompass','explicit','formulate','hypothesize','implicit','infer','integrate','mitigate','nuance','paradox','preliminary','profound','rationale','rigorous','transcend'] },
+  C2: { label:'C2', emoji:'🌌', name:'Maestría', color:'#a78bfa', words:['abstruse','acrimonious','ameliorate','anachronism','antithetical','arcane','assiduous','axiom','candor','cogent','commensurate','conjecture','convoluted','corroborate','delineate','dichotomy','diffidence','eloquent','equivocate','erudite','evocative','fallacious','fortuitous','impeccable','incisive','inscrutable','juxtapose','laconic','obfuscate','perspicacious'] }
 };
 
 let conversationHistory = [];
@@ -484,6 +484,73 @@ let activeProvider = localStorage.getItem(SAVED_PROVIDER_KEY) || 'groq';
 let loadModelsTimer = null;
 let activeThemeId = DEFAULT_THEME;
 let activeThemeMode = DEFAULT_THEME_MODE;
+
+
+marked.setOptions({ breaks: true, gfm: true });
+
+const THEMES = {
+  ember: {
+    label: 'Ámbar',
+    modes: {
+      dark: { vars: {
+        '--bg':'#0a0c14','--surface2':'#181c2e','--border':'rgba(241,99,52,0.22)','--accent':'#f16334','--accent2':'#fb923c','--gold':'#e8c97a','--text':'#eef1ff','--muted':'#9ba3c7','--bubble-user':'linear-gradient(135deg,#c2410c,#f16334)','--bubble-ai':'#181c2e','--bg-overlay':'rgba(10,12,20,.92)','--panel-bg':'rgba(10,12,20,.98)','--glow-1':'rgba(241,99,52,.14)','--glow-2':'rgba(251,146,60,.10)','--logo-grad-1':'#c2410c','--logo-grad-2':'#fb923c','--avatar-ai-1':'#7c2d12','--avatar-ai-2':'#f16334','--avatar-usr-1':'#f16334','--avatar-usr-2':'#fb923c','--title-grad-start':'#eef1ff','--title-grad-end':'#fb923c','--heading':'#ffd9bf','--emphasis':'#e9c87f','--code-bg':'rgba(241,99,52,.14)','--code-text':'#ffd2aa','--focus-ring':'rgba(241,99,52,.18)','--send-grad-1':'#c2410c','--send-grad-2':'#f16334','--user-text':'#ffffff','--logo-shadow':'rgba(241,99,52,.35)','--scroll-thumb':'#2a2f4a','--bubble-shadow':'rgba(0,0,0,.3)','--send-shadow':'rgba(241,99,52,.4)','--send-shadow-hover':'rgba(241,99,52,.55)','--steps-bg':'rgba(241,99,52,.07)','--error-bg':'rgba(220,60,60,.1)','--error-border':'rgba(220,60,60,.22)','--error-text':'#ff9e9e','--link-color':'#8cc8ff','--link-hover':'#c6e5ff'
+      }},
+      light: { vars: {
+        '--bg':'#fff8f1','--surface2':'#fffdf9','--border':'rgba(241,99,52,0.18)','--accent':'#dd6b20','--accent2':'#f59e0b','--gold':'#b7791f','--text':'#2d1b12','--muted':'#7b5e4b','--bubble-user':'linear-gradient(135deg,#dd6b20,#f59e0b)','--bubble-ai':'#fffdf9','--bg-overlay':'rgba(255,248,241,.92)','--panel-bg':'rgba(255,252,247,.97)','--glow-1':'rgba(251,146,60,.12)','--glow-2':'rgba(245,158,11,.10)','--logo-grad-1':'#dd6b20','--logo-grad-2':'#f59e0b','--avatar-ai-1':'#fed7aa','--avatar-ai-2':'#fdba74','--avatar-usr-1':'#f59e0b','--avatar-usr-2':'#fb923c','--title-grad-start':'#2d1b12','--title-grad-end':'#dd6b20','--heading':'#7c2d12','--emphasis':'#9a3412','--code-bg':'rgba(245,158,11,.10)','--code-text':'#9a3412','--focus-ring':'rgba(245,158,11,.18)','--send-grad-1':'#dd6b20','--send-grad-2':'#f59e0b','--user-text':'#ffffff','--logo-shadow':'rgba(245,158,11,.25)','--scroll-thumb':'#d6c1b0','--bubble-shadow':'rgba(107,70,40,.12)','--send-shadow':'rgba(245,158,11,.25)','--send-shadow-hover':'rgba(245,158,11,.35)','--steps-bg':'rgba(245,158,11,.08)','--error-bg':'rgba(220,60,60,.08)','--error-border':'rgba(220,60,60,.18)','--error-text':'#9b2c2c','--link-color':'#1d4ed8','--link-hover':'#1e40af'
+      }}
+    }
+  },
+  ocean: {
+    label: 'Océano',
+    modes: {
+      dark: { vars: {
+        '--bg':'#06131f','--surface2':'#0f2336','--border':'rgba(56,189,248,.22)','--accent':'#38bdf8','--accent2':'#22d3ee','--gold':'#7dd3fc','--text':'#e6f4ff','--muted':'#94a9c9','--bubble-user':'linear-gradient(135deg,#0369a1,#38bdf8)','--bubble-ai':'#0f2336','--bg-overlay':'rgba(6,19,31,.92)','--panel-bg':'rgba(6,19,31,.98)','--glow-1':'rgba(56,189,248,.14)','--glow-2':'rgba(34,211,238,.10)','--logo-grad-1':'#0369a1','--logo-grad-2':'#22d3ee','--avatar-ai-1':'#164e63','--avatar-ai-2':'#0891b2','--avatar-usr-1':'#0369a1','--avatar-usr-2':'#38bdf8','--title-grad-start':'#e6f4ff','--title-grad-end':'#67e8f9','--heading':'#bae6fd','--emphasis':'#67e8f9','--code-bg':'rgba(56,189,248,.12)','--code-text':'#bae6fd','--focus-ring':'rgba(56,189,248,.18)','--send-grad-1':'#0369a1','--send-grad-2':'#22d3ee','--user-text':'#ffffff','--logo-shadow':'rgba(34,211,238,.30)','--scroll-thumb':'#22415a','--bubble-shadow':'rgba(0,0,0,.28)','--send-shadow':'rgba(34,211,238,.28)','--send-shadow-hover':'rgba(34,211,238,.40)','--steps-bg':'rgba(56,189,248,.07)','--error-bg':'rgba(220,60,60,.1)','--error-border':'rgba(220,60,60,.22)','--error-text':'#ffb4b4','--link-color':'#93c5fd','--link-hover':'#dbeafe'
+      }},
+      light: { vars: {
+        '--bg':'#f3fbff','--surface2':'#ffffff','--border':'rgba(14,165,233,.18)','--accent':'#0284c7','--accent2':'#06b6d4','--gold':'#0f766e','--text':'#102a43','--muted':'#5c6f82','--bubble-user':'linear-gradient(135deg,#0284c7,#06b6d4)','--bubble-ai':'#ffffff','--bg-overlay':'rgba(243,251,255,.92)','--panel-bg':'rgba(249,253,255,.97)','--glow-1':'rgba(56,189,248,.12)','--glow-2':'rgba(103,232,249,.12)','--logo-grad-1':'#0284c7','--logo-grad-2':'#06b6d4','--avatar-ai-1':'#bae6fd','--avatar-ai-2':'#7dd3fc','--avatar-usr-1':'#0284c7','--avatar-usr-2':'#38bdf8','--title-grad-start':'#102a43','--title-grad-end':'#0284c7','--heading':'#0c4a6e','--emphasis':'#0f766e','--code-bg':'rgba(14,165,233,.10)','--code-text':'#0c4a6e','--focus-ring':'rgba(14,165,233,.18)','--send-grad-1':'#0284c7','--send-grad-2':'#06b6d4','--user-text':'#ffffff','--logo-shadow':'rgba(14,165,233,.25)','--scroll-thumb':'#bfd8e6','--bubble-shadow':'rgba(16,42,67,.12)','--send-shadow':'rgba(14,165,233,.24)','--send-shadow-hover':'rgba(14,165,233,.32)','--steps-bg':'rgba(14,165,233,.08)','--error-bg':'rgba(220,60,60,.08)','--error-border':'rgba(220,60,60,.16)','--error-text':'#9b2c2c','--link-color':'#1d4ed8','--link-hover':'#1e40af'
+      }}
+    }
+  },
+  forest: {
+    label: 'Bosque',
+    modes: {
+      dark: { vars: {
+        '--bg':'#08120d','--surface2':'#132219','--border':'rgba(74,222,128,.18)','--accent':'#4ade80','--accent2':'#86efac','--gold':'#bef264','--text':'#edfdf2','--muted':'#98b7a2','--bubble-user':'linear-gradient(135deg,#15803d,#4ade80)','--bubble-ai':'#132219','--bg-overlay':'rgba(8,18,13,.92)','--panel-bg':'rgba(8,18,13,.98)','--glow-1':'rgba(74,222,128,.12)','--glow-2':'rgba(190,242,100,.08)','--logo-grad-1':'#15803d','--logo-grad-2':'#4ade80','--avatar-ai-1':'#14532d','--avatar-ai-2':'#22c55e','--avatar-usr-1':'#15803d','--avatar-usr-2':'#4ade80','--title-grad-start':'#edfdf2','--title-grad-end':'#86efac','--heading':'#d9f99d','--emphasis':'#bef264','--code-bg':'rgba(74,222,128,.12)','--code-text':'#d9f99d','--focus-ring':'rgba(74,222,128,.18)','--send-grad-1':'#15803d','--send-grad-2':'#4ade80','--user-text':'#ffffff','--logo-shadow':'rgba(74,222,128,.28)','--scroll-thumb':'#274236','--bubble-shadow':'rgba(0,0,0,.28)','--send-shadow':'rgba(74,222,128,.28)','--send-shadow-hover':'rgba(74,222,128,.40)','--steps-bg':'rgba(74,222,128,.07)','--error-bg':'rgba(220,60,60,.1)','--error-border':'rgba(220,60,60,.2)','--error-text':'#ffb4b4','--link-color':'#93c5fd','--link-hover':'#dbeafe'
+      }},
+      light: { vars: {
+        '--bg':'#f6fff8','--surface2':'#ffffff','--border':'rgba(34,197,94,.16)','--accent':'#16a34a','--accent2':'#65a30d','--gold':'#4d7c0f','--text':'#16361f','--muted':'#5f7a68','--bubble-user':'linear-gradient(135deg,#16a34a,#65a30d)','--bubble-ai':'#ffffff','--bg-overlay':'rgba(246,255,248,.92)','--panel-bg':'rgba(250,255,251,.97)','--glow-1':'rgba(74,222,128,.10)','--glow-2':'rgba(190,242,100,.10)','--logo-grad-1':'#16a34a','--logo-grad-2':'#65a30d','--avatar-ai-1':'#dcfce7','--avatar-ai-2':'#bbf7d0','--avatar-usr-1':'#16a34a','--avatar-usr-2':'#65a30d','--title-grad-start':'#16361f','--title-grad-end':'#15803d','--heading':'#365314','--emphasis':'#4d7c0f','--code-bg':'rgba(34,197,94,.10)','--code-text':'#365314','--focus-ring':'rgba(34,197,94,.18)','--send-grad-1':'#16a34a','--send-grad-2':'#65a30d','--user-text':'#ffffff','--logo-shadow':'rgba(34,197,94,.24)','--scroll-thumb':'#c7dfce','--bubble-shadow':'rgba(22,54,31,.12)','--send-shadow':'rgba(34,197,94,.24)','--send-shadow-hover':'rgba(34,197,94,.34)','--steps-bg':'rgba(34,197,94,.08)','--error-bg':'rgba(220,60,60,.08)','--error-border':'rgba(220,60,60,.16)','--error-text':'#9b2c2c','--link-color':'#1d4ed8','--link-hover':'#1e40af'
+      }}
+    }
+  }
+};
+
+const chatDiv = document.getElementById('chat');
+const inputEl = document.getElementById('input');
+const sendBtn = document.getElementById('sendBtn');
+const keyPanel = document.getElementById('key-panel');
+const themePanel = document.getElementById('theme-panel');
+const providerSelect = document.getElementById('providerSelect');
+const settingsProviderSelect = document.getElementById('settingsProviderSelect');
+const modelSelect = document.getElementById('modelSelect');
+const tempSelect = document.getElementById('tempSelect');
+const keyInput = document.getElementById('apiKeyInput');
+const keyStatus = document.getElementById('keyStatus');
+const providerKeyLink = document.getElementById('providerKeyLink');
+const groqKeyInput = document.getElementById('groqKeyInput');
+const groqKeyStatus = document.getElementById('groqKeyStatus');
+const deepseekKeyInput = document.getElementById('deepseekKeyInput');
+const deepseekKeyStatus = document.getElementById('deepseekKeyStatus');
+const notesInput = document.getElementById('notesInput');
+const themeGrid = document.getElementById('themeGrid');
+const modeDarkBtn = document.getElementById('modeDarkBtn');
+const modeLightBtn = document.getElementById('modeLightBtn');
+const paperTextureToggle = document.getElementById('paperTextureToggle');
+const paperTextureLevel = document.getElementById('paperTextureLevel');
+const paperTextureLevelValue = document.getElementById('paperTextureLevelValue');
+const paperTextureGlobalToggle = document.getElementById('paperTextureGlobalToggle');
+const paperTextureGlobalLevel = document.getElementById('paperTextureGlobalLevel');
+const paperTextureGlobalLevelValue = document.getElementById('paperTextureGlobalLevelValue');
+const brandSubtitle = document.querySelector('.brand-text p');
 
 function toggleKeyPanel(force) {
   if (typeof force === 'boolean') keyPanel.classList.toggle('open', force);
@@ -643,7 +710,7 @@ function syncProviderFields() {
   keyInput.value = getCurrentKey();
   keyInput.placeholder = getProviderConfig(activeProvider).placeholder;
   providerKeyLink.href = getProviderConfig(activeProvider).keyLink;
-  document.querySelector('.brand-text p').textContent = `${getProviderConfig(activeProvider).label.toUpperCase()} + TEMAS`;
+  if (brandSubtitle) brandSubtitle.textContent = `INGLÉS ↔ ESPAÑOL · ${getProviderConfig(activeProvider).label.toUpperCase()}`;
   setKeyStatus(keyStatus, isKeyValid(activeProvider, keyInput.value.trim()));
 }
 
@@ -729,7 +796,7 @@ function selectLevel(key) {
 }
 
 function quickSend(text) {
-  if (!getCurrentKey()) {
+  if (!isKeyValid(activeProvider, getCurrentKey())) {
     toggleKeyPanel(true);
     keyInput.focus();
     return;
@@ -896,7 +963,7 @@ async function sendMessage(forcedText = '') {
   const text = forcedText || inputEl.value.trim();
   if (isLoading) { stopGeneration(); return; }
   if (!text) return;
-  if (!getCurrentKey()) {
+  if (!isKeyValid(activeProvider, getCurrentKey())) {
     toggleKeyPanel(true);
     keyInput.focus();
     return;
