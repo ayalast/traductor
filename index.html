@@ -101,20 +101,23 @@
   .settings-section{margin-top:8px}
   .settings-section label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:6px}
   .settings-row{display:flex;align-items:center;gap:8px}
-  #providerSelect,#apiKeyInput,#groqKeyInput,#deepseekKeyInput,#notesInput{
+  #providerSelect,#modelSelect,#tempSelect,#apiKeyInput,#groqKeyInput,#deepseekKeyInput,#notesInput{
     flex:1;min-width:0;
     background:var(--surface2);border:1px solid var(--border);
     border-radius:10px;padding:7px 12px;color:var(--text);
     font-family:var(--font-body);font-size:.8rem;outline:none;
     transition:border-color .2s;
   }
-  #providerSelect,#notesInput{width:100%}
+  #providerSelect,#modelSelect,#tempSelect,#notesInput{width:100%;max-width:none}
   #notesInput{min-height:86px;max-height:180px;resize:vertical}
-  #providerSelect:focus,#apiKeyInput:focus,#groqKeyInput:focus,#deepseekKeyInput:focus,#notesInput:focus{border-color:var(--accent)}
+  #providerSelect:focus,#modelSelect:focus,#tempSelect:focus,#apiKeyInput:focus,#groqKeyInput:focus,#deepseekKeyInput:focus,#notesInput:focus{border-color:var(--accent)}
   #apiKeyInput::placeholder,#groqKeyInput::placeholder,#deepseekKeyInput::placeholder,#notesInput::placeholder{color:var(--muted)}
   .key-link{font-size:.7rem;color:var(--accent2);text-decoration:none;white-space:nowrap}
   .key-link:hover{text-decoration:underline}
   .key-status{font-size:18px;flex-shrink:0;transition:all .3s}
+  .settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .settings-card{padding:10px;border:1px solid rgba(255,255,255,.05);border-radius:12px;background:rgba(255,255,255,.02)}
+  .settings-card label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:6px}
 
   header{padding:10px 14px;background:var(--bg-overlay);backdrop-filter:blur(20px);
     border-bottom:1px solid var(--border);display:flex;align-items:center;
@@ -209,8 +212,151 @@
   .welcome{text-align:center;padding:16px 4px;animation:fadeUp .5s ease both}
   .welcome .icon{font-size:2rem;margin-bottom:8px;display:block}
   .welcome h2{font-family:var(--font-display);font-size:1.2rem;margin-bottom:6px;background:linear-gradient(90deg,var(--title-grad-start),var(--title-grad-end));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-  .steps{text-align:left;display:block;width:100%;background:var(--steps-bg);border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-size:.76rem;color:var(--muted)}
-  .steps b{color:var(--accent2);display:block;margin-bottom:8px;font-size:.8rem}
+  .steps{
+    text-align:left;display:block;width:100%;
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0)),
+      linear-gradient(135deg,color-mix(in srgb, var(--accent) 14%, transparent),color-mix(in srgb, var(--surface2) 88%, var(--bg) 12%) 48%, color-mix(in srgb, var(--panel-bg) 92%, var(--bg) 8%));
+    border:1px solid color-mix(in srgb, var(--accent) 28%, var(--border) 72%);
+    border-radius:22px;
+    padding:18px;
+    font-size:.76rem;
+    color:var(--muted);
+    box-shadow:0 18px 40px color-mix(in srgb, var(--bubble-shadow) 72%, transparent), inset 0 1px 0 rgba(255,255,255,.05)
+  }
+  .steps-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .steps-title-wrap{display:flex;flex-direction:column;gap:4px}
+  .steps b{color:var(--accent2);display:block;margin-bottom:0;font-size:.98rem;letter-spacing:-.01em}
+  .steps-subtitle{font-size:.72rem;color:var(--muted);line-height:1.45;max-width:36ch}
+  .level-tabs{
+    display:flex;
+    gap:10px;
+    overflow-x:auto;
+    padding:3px 2px 8px;
+    margin:0 -2px 14px;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+    scroll-snap-type:x proximity
+  }
+  .level-tabs::-webkit-scrollbar{display:none}
+  .level-tab{
+    position:relative;
+    border:1px solid rgba(255,255,255,.08);
+    background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));
+    color:var(--text);
+    border-radius:18px;
+    padding:11px 14px 12px;
+    min-width:126px;
+    display:grid;
+    grid-template-columns:auto 1fr;
+    grid-template-areas:
+      "emoji label"
+      "emoji name";
+    column-gap:10px;
+    row-gap:2px;
+    align-items:center;
+    cursor:pointer;
+    flex:0 0 auto;
+    text-align:left;
+    scroll-snap-align:start;
+    transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,background .18s ease;
+    box-shadow:0 10px 24px rgba(0,0,0,.16)
+  }
+  .level-tab::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    border-radius:inherit;
+    background:linear-gradient(135deg,color-mix(in srgb, var(--lvl-color) 20%, transparent),transparent 65%);
+    opacity:.9;
+    pointer-events:none
+  }
+  .level-tab:hover{
+    transform:translateY(-2px);
+    border-color:color-mix(in srgb, var(--lvl-color) 70%, white 10%);
+    box-shadow:0 14px 28px rgba(0,0,0,.22)
+  }
+  .level-tab.active{
+    border-color:color-mix(in srgb, var(--lvl-color) 80%, white 12%);
+    background:linear-gradient(180deg,color-mix(in srgb, var(--lvl-color) 18%, rgba(255,255,255,.04)),rgba(255,255,255,.02));
+    box-shadow:0 0 0 1px color-mix(in srgb, var(--lvl-color) 42%, transparent),0 16px 30px rgba(0,0,0,.24)
+  }
+  .level-tab:focus-visible,.word-card:focus-visible,.refresh-btn:focus-visible{
+    outline:none;
+    box-shadow:0 0 0 3px var(--focus-ring),0 14px 28px rgba(0,0,0,.24)
+  }
+  .level-emoji,.level-label,.level-name{position:relative;z-index:1}
+  .level-emoji{
+    grid-area:emoji;
+    width:34px;height:34px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:12px;
+    font-size:1rem;
+    background:color-mix(in srgb, var(--lvl-color) 22%, rgba(255,255,255,.06));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12)
+  }
+  .level-label{
+    grid-area:label;
+    font-size:.86rem;
+    font-weight:700;
+    letter-spacing:.02em;
+    color:color-mix(in srgb, var(--lvl-color) 72%, white 18%)
+  }
+  .level-name{
+    grid-area:name;
+    font-size:.73rem;
+    color:rgba(238,241,255,.82);
+    white-space:nowrap
+  }
+  .word-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+    gap:10px;
+    margin-bottom:14px
+  }
+  .word-card{
+    border:1px solid rgba(255,255,255,.08);
+    background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018));
+    color:var(--text);
+    border-radius:16px;
+    min-height:52px;
+    padding:12px 14px;
+    display:flex;align-items:center;justify-content:center;
+    text-align:center;
+    font-family:var(--font-body);
+    font-size:.92rem;
+    font-weight:600;
+    letter-spacing:.01em;
+    cursor:pointer;
+    transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,background .18s ease;
+    box-shadow:0 10px 24px rgba(0,0,0,.14)
+  }
+  .word-card:hover{
+    transform:translateY(-2px);
+    border-color:rgba(241,99,52,.45);
+    background:linear-gradient(180deg,rgba(241,99,52,.16),rgba(255,255,255,.02));
+    box-shadow:0 14px 28px rgba(0,0,0,.2)
+  }
+  .steps-footer{display:flex;justify-content:flex-end}
+  .refresh-btn{
+    appearance:none;
+    border:1px solid rgba(241,99,52,.32);
+    background:linear-gradient(135deg,rgba(241,99,52,.18),rgba(251,146,60,.1));
+    color:var(--heading);
+    border-radius:999px;
+    padding:10px 14px;
+    font-family:var(--font-body);
+    font-size:.8rem;
+    font-weight:700;
+    cursor:pointer;
+    transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,background .18s ease;
+    box-shadow:0 12px 24px rgba(0,0,0,.16)
+  }
+  .refresh-btn:hover{
+    transform:translateY(-1px);
+    border-color:rgba(251,146,60,.48);
+    box-shadow:0 16px 28px rgba(0,0,0,.22)
+  }
   .steps ol{padding-left:15px}
   .steps li{margin:4px 0;line-height:1.5}
 
@@ -218,57 +364,177 @@
 
   #theme-panel{
     position:fixed;inset:0;z-index:30;display:none;
-    background:rgba(5,8,12,.56);backdrop-filter:blur(6px)
+    background:color-mix(in srgb, var(--bg-overlay) 74%, rgba(255,255,255,.18) 26%);backdrop-filter:blur(10px)
   }
   #theme-panel.open{display:block}
   .theme-sheet{
     position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
     width:min(760px,calc(100vw - 18px));max-height:min(88vh,760px);overflow:auto;
-    background:var(--panel-bg);border:1px solid var(--border);border-radius:16px;
-    box-shadow:0 18px 42px rgba(0,0,0,.35);padding:14px
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,0)),
+      linear-gradient(135deg,color-mix(in srgb, var(--accent) 10%, transparent),color-mix(in srgb, var(--panel-bg) 90%, var(--surface2) 10%));
+    border:1px solid color-mix(in srgb, var(--accent) 24%, var(--border) 76%);
+    border-radius:22px;
+    box-shadow:0 22px 60px color-mix(in srgb, var(--bubble-shadow) 78%, transparent), inset 0 1px 0 rgba(255,255,255,.06);
+    padding:18px
   }
-  .theme-sheet-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
-  .theme-sheet-title{font-family:var(--font-display);font-size:1rem;color:var(--text)}
-  .theme-close{border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:10px;padding:6px 10px;cursor:pointer}
-  .theme-mode-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-  .mode-btn{border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:10px;padding:7px 10px;cursor:pointer;font-size:.76rem}
-  .mode-btn.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--focus-ring)}
-  .paper-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-  .paper-row label{font-size:.76rem;color:var(--text)}
-  .paper-toggle{display:flex;align-items:center;gap:8px}
-  .paper-toggle input{transform:scale(1.1)}
-  .paper-slider{flex:1;min-width:180px;display:flex;align-items:center;gap:8px}
-  .paper-slider input[type="range"]{width:100%}
-  .paper-val{font-size:.74rem;color:var(--muted);min-width:42px;text-align:right}
-  .theme-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  .theme-card{border:1px solid var(--border);border-radius:12px;background:var(--surface2);padding:10px;cursor:pointer;text-align:left;color:var(--text)}
-  .theme-card.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--focus-ring)}
-  .theme-card-title{font-size:.84rem;font-weight:700;margin-bottom:4px}
-  .theme-card-meta{font-size:.72rem;color:var(--muted);margin-bottom:8px}
-  .theme-swatches{display:flex;gap:6px}
-  .sw{width:16px;height:16px;border-radius:99px;border:1px solid rgba(255,255,255,.25)}
+  .theme-sheet-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px}
+  .theme-sheet-copy{display:flex;flex-direction:column;gap:4px}
+  .theme-sheet-title{font-family:var(--font-display);font-size:1.08rem;color:var(--text)}
+  .theme-sheet-subtitle{font-size:.78rem;color:var(--muted);line-height:1.45;max-width:42ch}
+  .theme-close{
+    border:1px solid color-mix(in srgb, var(--accent) 24%, var(--border) 76%);
+    background:linear-gradient(180deg,color-mix(in srgb, var(--surface2) 88%, white 12%),color-mix(in srgb, var(--surface2) 96%, transparent));
+    color:var(--text);border-radius:14px;padding:9px 14px;cursor:pointer;
+    transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease
+  }
+  .theme-close:hover{transform:translateY(-1px);border-color:color-mix(in srgb, var(--accent) 45%, rgba(255,255,255,.08));box-shadow:0 12px 24px rgba(0,0,0,.18)}
+  .theme-controls{display:grid;gap:12px;margin-bottom:14px}
+  .theme-mode-row{display:flex;gap:10px;flex-wrap:wrap}
+  .mode-btn{
+    border:1px solid color-mix(in srgb, var(--accent) 18%, var(--border) 82%);
+    background:linear-gradient(180deg,color-mix(in srgb, var(--surface2) 88%, white 12%),color-mix(in srgb, var(--surface2) 96%, transparent));
+    color:var(--text);border-radius:16px;padding:10px 14px;cursor:pointer;font-size:.8rem;font-weight:700;
+    transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,background .18s ease
+  }
+  .mode-btn:hover{transform:translateY(-1px);border-color:color-mix(in srgb, var(--accent) 38%, rgba(255,255,255,.08))}
+  .mode-btn.active{
+    border-color:color-mix(in srgb, var(--accent) 70%, rgba(255,255,255,.1));
+    background:linear-gradient(180deg,color-mix(in srgb, var(--accent) 18%, rgba(255,255,255,.04)),rgba(255,255,255,.02));
+    box-shadow:0 0 0 2px var(--focus-ring),0 16px 30px rgba(0,0,0,.18)
+  }
+  .theme-tools{display:grid;gap:10px}
+  .paper-row{
+    display:grid;
+    grid-template-columns:minmax(220px,1fr) minmax(180px,2fr);
+    align-items:center;
+    gap:12px;
+    padding:12px 14px;
+    border:1px solid color-mix(in srgb, var(--border) 82%, rgba(255,255,255,.08));
+    border-radius:16px;
+    background:linear-gradient(180deg,color-mix(in srgb, var(--surface2) 86%, white 14%),color-mix(in srgb, var(--surface2) 96%, transparent))
+  }
+  .paper-row label{font-size:.8rem;color:var(--text)}
+  .paper-toggle{display:flex;align-items:center;gap:10px;font-weight:600}
+  .paper-toggle input{transform:scale(1.08);accent-color:var(--accent)}
+  .paper-slider{display:flex;align-items:center;gap:10px;min-width:0}
+  .paper-slider input[type="range"]{
+    width:100%;
+    accent-color:var(--accent);
+    cursor:pointer
+  }
+  .paper-val{font-size:.76rem;color:var(--muted);min-width:46px;text-align:right;font-weight:700}
+  .theme-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .theme-card{
+    position:relative;
+    border:1px solid color-mix(in srgb, var(--border) 80%, rgba(255,255,255,.08));
+    border-radius:20px;
+    background:linear-gradient(180deg,color-mix(in srgb, var(--surface2) 84%, white 16%),color-mix(in srgb, var(--surface2) 96%, transparent));
+    padding:14px;
+    cursor:pointer;
+    text-align:left;
+    color:var(--text);
+    overflow:hidden;
+    transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,background .18s ease
+  }
+  .theme-card:hover{
+    transform:translateY(-2px);
+    border-color:color-mix(in srgb, var(--accent) 36%, rgba(255,255,255,.08));
+    box-shadow:0 18px 34px rgba(0,0,0,.18)
+  }
+  .theme-card.active{
+    border-color:color-mix(in srgb, var(--accent) 70%, rgba(255,255,255,.1));
+    box-shadow:0 0 0 2px var(--focus-ring),0 18px 36px rgba(0,0,0,.22)
+  }
+  .theme-card::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(135deg,var(--theme-accent-soft),transparent 62%);
+    opacity:.95;
+    pointer-events:none
+  }
+  .theme-card-top,.theme-card-desc,.theme-preview,.theme-swatches{position:relative;z-index:1}
+  .theme-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+  .theme-card-title{font-size:1rem;font-weight:800;letter-spacing:-.02em}
+  .theme-card-meta{
+    font-size:.72rem;color:var(--muted);
+    padding:5px 9px;border-radius:999px;
+    background:color-mix(in srgb, var(--surface2) 88%, white 12%);
+    border:1px solid color-mix(in srgb, var(--border) 76%, rgba(255,255,255,.08))
+  }
+  .theme-card-desc{font-size:.76rem;color:color-mix(in srgb, var(--text) 84%, var(--muted) 16%);line-height:1.45;margin-bottom:12px;min-height:2.2em}
+  .theme-preview{
+    border-radius:16px;
+    padding:12px;
+    min-height:96px;
+    margin-bottom:12px;
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015)),
+      var(--theme-preview-bg);
+    border:1px solid color-mix(in srgb, var(--border) 78%, rgba(255,255,255,.08));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06)
+  }
+  .theme-preview-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .theme-preview-pill{
+    width:44%;
+    height:10px;
+    border-radius:999px;
+    background:var(--theme-surface);
+    opacity:.9
+  }
+  .theme-preview-dot{
+    width:12px;height:12px;border-radius:999px;background:var(--theme-accent);
+    box-shadow:0 0 0 3px rgba(255,255,255,.08)
+  }
+  .theme-preview-lines{display:grid;gap:8px}
+  .theme-preview-line{
+    height:10px;border-radius:999px;background:var(--theme-text-soft)
+  }
+  .theme-preview-line.short{width:66%}
+  .theme-swatches{display:flex;gap:8px}
+  .sw{width:18px;height:18px;border-radius:999px;border:1px solid rgba(255,255,255,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
 
   @media (max-width:480px){
     #key-panel{bottom:calc(56px + env(safe-area-inset-bottom));padding:10px}
-    #key-panel label,.key-link{display:none}
+    .key-link{display:none}
     header{padding:8px 12px;gap:6px}
     .logo{width:34px;height:34px;border-radius:10px;font-size:16px}
     .brand-text h1{font-size:1rem}
     .brand-text p{display:none}
-    .header-controls{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+    .header-controls{margin-left:auto}
     .select-wrap{min-width:0}
     select{width:100%;max-width:none;font-size:.67rem;padding:6px 22px 6px 8px}
     .theme-open-btn{width:100%;font-size:.67rem;padding:6px 8px}
+    .settings-grid{grid-template-columns:1fr}
     .theme-sheet{width:min(760px,calc(100vw - 12px));padding:12px;max-height:92vh}
-    .paper-row{gap:8px}
-    .paper-slider{min-width:100%}
+    .theme-sheet-head{align-items:flex-start}
+    .theme-sheet-subtitle{max-width:none}
+    .paper-row{grid-template-columns:1fr;gap:10px;padding:12px}
     .theme-grid{grid-template-columns:1fr;gap:8px}
+    .theme-card{padding:12px}
+    .theme-preview{min-height:88px}
     #chat{padding:12px 10px;gap:12px}
     .bubble{font-size:.83rem;padding:10px 13px}
     footer{padding:8px 10px 10px}
     textarea{font-size:16px;padding:10px 13px;min-height:42px}
     .send-btn{width:42px;height:42px}
     .hint{display:none}
+    .welcome{padding:10px 2px 14px}
+    .welcome .icon{font-size:1.8rem}
+    .welcome h2{font-size:1.02rem}
+    .steps{padding:14px;border-radius:18px}
+    .steps-header{flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:12px}
+    .steps-subtitle{max-width:none;font-size:.7rem}
+    .level-tabs{gap:8px;margin-bottom:12px;padding-bottom:6px}
+    .level-tab{min-width:116px;padding:10px 12px 11px;border-radius:16px}
+    .level-emoji{width:30px;height:30px;border-radius:10px;font-size:.94rem}
+    .level-label{font-size:.8rem}
+    .level-name{font-size:.68rem}
+    .word-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
+    .word-card{min-height:48px;padding:11px 10px;font-size:.84rem;border-radius:14px}
+    .steps-footer{justify-content:stretch}
+    .refresh-btn{width:100%;justify-content:center;padding:10px 12px}
   }
 </style>
 </head>
@@ -285,24 +551,6 @@
       </div>
     </div>
     <div class="header-controls">
-      <div class="select-wrap">
-        <select id="providerSelect">
-          <option value="groq" selected>Groq</option>
-          <option value="deepseek">DeepSeek</option>
-        </select>
-      </div>
-      <div class="select-wrap">
-        <select id="modelSelect">
-          <option value="moonshotai/kimi-k2-instruct-0905" selected>Kimi K2 Instruct 0905 ⭐</option>
-        </select>
-      </div>
-      <div class="select-wrap">
-        <select id="tempSelect">
-          <option value="0.2">Preciso</option>
-          <option value="0.5" selected>Equilibrado</option>
-          <option value="0.9">Creativo</option>
-        </select>
-      </div>
       <button class="theme-open-btn" id="openThemePanelBtn" type="button" title="Abrir configuración de temas" aria-label="Abrir configuración de temas" onclick="toggleThemePanel(true)">🎨 Temas</button>
     </div>
   </header>
@@ -325,17 +573,41 @@
   <div class="settings-title">⚙️ Configuración</div>
 
   <div class="settings-section">
-    <label>Proveedor activo</label>
-    <div class="settings-row">
-      <select id="settingsProviderSelect">
-        <option value="groq" selected>Groq</option>
-        <option value="deepseek">DeepSeek</option>
-      </select>
+    <label>Proveedor y modelo</label>
+    <div class="settings-grid">
+      <div class="settings-card">
+        <label for="providerSelect">Proveedor activo</label>
+        <div class="select-wrap">
+          <select id="providerSelect">
+            <option value="groq" selected>Groq</option>
+            <option value="deepseek">DeepSeek</option>
+          </select>
+        </div>
+      </div>
+      <div class="settings-card">
+        <label for="tempSelect">Estilo de respuesta</label>
+        <div class="select-wrap">
+          <select id="tempSelect">
+            <option value="0.2">Preciso</option>
+            <option value="0.5" selected>Equilibrado</option>
+            <option value="0.9">Creativo</option>
+          </select>
+        </div>
+      </div>
+      <div class="settings-card" style="grid-column:1 / -1">
+        <label for="modelSelect">Modelo</label>
+        <div class="select-wrap">
+          <select id="modelSelect">
+            <option value="moonshotai/kimi-k2-instruct-0905" selected>Kimi K2 Instruct 0905 ⭐</option>
+          </select>
+        </div>
+        <div class="settings-title" style="margin:8px 0 0;font-size:.7rem;color:var(--muted);font-weight:500">Los modelos se actualizan según el proveedor y la API key disponible.</div>
+      </div>
     </div>
   </div>
 
   <div class="settings-section">
-    <label>🔑 API key del proveedor activo</label>
+    <label>API key del proveedor activo</label>
     <div class="settings-row">
       <input type="password" id="apiKeyInput" placeholder="gsk_... o sk-..." oninput="onKeyInput()">
       <span class="key-status" id="keyStatus">⬜</span>
@@ -344,20 +616,24 @@
   </div>
 
   <div class="settings-section">
-    <label>🔐 Groq API Key</label>
-    <div class="settings-row">
-      <input type="password" id="groqKeyInput" placeholder="gsk_xxxxxxxxxxxxxxxxxxxxxxxx" oninput="onProviderKeyInput('groq')">
-      <span class="key-status" id="groqKeyStatus">⬜</span>
-      <a class="key-link" href="https://console.groq.com/keys" target="_blank">Groq →</a>
-    </div>
-  </div>
-
-  <div class="settings-section">
-    <label>🔐 DeepSeek API Key</label>
-    <div class="settings-row">
-      <input type="password" id="deepseekKeyInput" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxx" oninput="onProviderKeyInput('deepseek')">
-      <span class="key-status" id="deepseekKeyStatus">⬜</span>
-      <a class="key-link" href="https://platform.deepseek.com/api_keys" target="_blank">DeepSeek →</a>
+    <label>Claves por proveedor</label>
+    <div class="settings-grid">
+      <div class="settings-card">
+        <label for="groqKeyInput">Groq API Key</label>
+        <div class="settings-row">
+          <input type="password" id="groqKeyInput" placeholder="gsk_xxxxxxxxxxxxxxxxxxxxxxxx" oninput="onProviderKeyInput('groq')">
+          <span class="key-status" id="groqKeyStatus">⬜</span>
+          <a class="key-link" href="https://console.groq.com/keys" target="_blank">Groq →</a>
+        </div>
+      </div>
+      <div class="settings-card">
+        <label for="deepseekKeyInput">DeepSeek API Key</label>
+        <div class="settings-row">
+          <input type="password" id="deepseekKeyInput" placeholder="sk_xxxxxxxxxxxxxxxxxxxxxxxx" oninput="onProviderKeyInput('deepseek')">
+          <span class="key-status" id="deepseekKeyStatus">⬜</span>
+          <a class="key-link" href="https://platform.deepseek.com/api_keys" target="_blank">DeepSeek →</a>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -372,13 +648,18 @@
 <div id="theme-panel" aria-hidden="true">
   <div class="theme-sheet" role="dialog" aria-modal="true" aria-label="Configuración de temas">
     <div class="theme-sheet-head">
+      <div class="theme-sheet-copy">
       <div class="theme-sheet-title">🎨 Configuración de temas</div>
+      <div class="theme-sheet-subtitle">Elige una dirección visual más cuidada para toda la interfaz. Cada tema ajusta contraste, acentos y profundidad en claro y oscuro.</div>
+      </div>
       <button class="theme-close" type="button" onclick="toggleThemePanel(false)">Cerrar</button>
     </div>
+    <div class="theme-controls">
     <div class="theme-mode-row">
       <button id="modeDarkBtn" class="mode-btn" type="button" onclick="setThemeMode('dark')">🌙 Modo oscuro</button>
       <button id="modeLightBtn" class="mode-btn" type="button" onclick="setThemeMode('light')">☀️ Modo claro</button>
     </div>
+    <div class="theme-tools">
     <div class="paper-row">
       <div class="paper-toggle">
         <input id="paperTextureToggle" type="checkbox" onchange="onPaperTextureToggle()">
@@ -398,6 +679,8 @@
         <input id="paperTextureGlobalLevel" type="range" min="0" max="100" step="1" value="0" oninput="onPaperTextureGlobalLevelInput()">
         <span id="paperTextureGlobalLevelValue" class="paper-val">0%</span>
       </div>
+    </div>
+    </div>
     </div>
     <div id="themeGrid" class="theme-grid"></div>
   </div>
@@ -490,7 +773,8 @@ marked.setOptions({ breaks: true, gfm: true });
 
 const THEMES = {
   ember: {
-    label: 'Ámbar',
+    label: 'Ambar',
+    description: 'Calido y cinematografico, con naranjas suaves y profundidad de cobre.',
     modes: {
       dark: { vars: {
         '--bg':'#0a0c14','--surface2':'#181c2e','--border':'rgba(241,99,52,0.22)','--accent':'#f16334','--accent2':'#fb923c','--gold':'#e8c97a','--text':'#eef1ff','--muted':'#9ba3c7','--bubble-user':'linear-gradient(135deg,#c2410c,#f16334)','--bubble-ai':'#181c2e','--bg-overlay':'rgba(10,12,20,.92)','--panel-bg':'rgba(10,12,20,.98)','--glow-1':'rgba(241,99,52,.14)','--glow-2':'rgba(251,146,60,.10)','--logo-grad-1':'#c2410c','--logo-grad-2':'#fb923c','--avatar-ai-1':'#7c2d12','--avatar-ai-2':'#f16334','--avatar-usr-1':'#f16334','--avatar-usr-2':'#fb923c','--title-grad-start':'#eef1ff','--title-grad-end':'#fb923c','--heading':'#ffd9bf','--emphasis':'#e9c87f','--code-bg':'rgba(241,99,52,.14)','--code-text':'#ffd2aa','--focus-ring':'rgba(241,99,52,.18)','--send-grad-1':'#c2410c','--send-grad-2':'#f16334','--user-text':'#ffffff','--logo-shadow':'rgba(241,99,52,.35)','--scroll-thumb':'#2a2f4a','--bubble-shadow':'rgba(0,0,0,.3)','--send-shadow':'rgba(241,99,52,.4)','--send-shadow-hover':'rgba(241,99,52,.55)','--steps-bg':'rgba(241,99,52,.07)','--error-bg':'rgba(220,60,60,.1)','--error-border':'rgba(220,60,60,.22)','--error-text':'#ff9e9e','--link-color':'#8cc8ff','--link-hover':'#c6e5ff'
@@ -501,7 +785,8 @@ const THEMES = {
     }
   },
   ocean: {
-    label: 'Océano',
+    label: 'Oceano',
+    description: 'Mas limpio y tecnico, con azules frios y mejor lectura en oscuro.',
     modes: {
       dark: { vars: {
         '--bg':'#06131f','--surface2':'#0f2336','--border':'rgba(56,189,248,.22)','--accent':'#38bdf8','--accent2':'#22d3ee','--gold':'#7dd3fc','--text':'#e6f4ff','--muted':'#94a9c9','--bubble-user':'linear-gradient(135deg,#0369a1,#38bdf8)','--bubble-ai':'#0f2336','--bg-overlay':'rgba(6,19,31,.92)','--panel-bg':'rgba(6,19,31,.98)','--glow-1':'rgba(56,189,248,.14)','--glow-2':'rgba(34,211,238,.10)','--logo-grad-1':'#0369a1','--logo-grad-2':'#22d3ee','--avatar-ai-1':'#164e63','--avatar-ai-2':'#0891b2','--avatar-usr-1':'#0369a1','--avatar-usr-2':'#38bdf8','--title-grad-start':'#e6f4ff','--title-grad-end':'#67e8f9','--heading':'#bae6fd','--emphasis':'#67e8f9','--code-bg':'rgba(56,189,248,.12)','--code-text':'#bae6fd','--focus-ring':'rgba(56,189,248,.18)','--send-grad-1':'#0369a1','--send-grad-2':'#22d3ee','--user-text':'#ffffff','--logo-shadow':'rgba(34,211,238,.30)','--scroll-thumb':'#22415a','--bubble-shadow':'rgba(0,0,0,.28)','--send-shadow':'rgba(34,211,238,.28)','--send-shadow-hover':'rgba(34,211,238,.40)','--steps-bg':'rgba(56,189,248,.07)','--error-bg':'rgba(220,60,60,.1)','--error-border':'rgba(220,60,60,.22)','--error-text':'#ffb4b4','--link-color':'#93c5fd','--link-hover':'#dbeafe'
@@ -513,12 +798,49 @@ const THEMES = {
   },
   forest: {
     label: 'Bosque',
+    description: 'Verde sereno con contraste natural y un tono mas organico.',
     modes: {
       dark: { vars: {
         '--bg':'#08120d','--surface2':'#132219','--border':'rgba(74,222,128,.18)','--accent':'#4ade80','--accent2':'#86efac','--gold':'#bef264','--text':'#edfdf2','--muted':'#98b7a2','--bubble-user':'linear-gradient(135deg,#15803d,#4ade80)','--bubble-ai':'#132219','--bg-overlay':'rgba(8,18,13,.92)','--panel-bg':'rgba(8,18,13,.98)','--glow-1':'rgba(74,222,128,.12)','--glow-2':'rgba(190,242,100,.08)','--logo-grad-1':'#15803d','--logo-grad-2':'#4ade80','--avatar-ai-1':'#14532d','--avatar-ai-2':'#22c55e','--avatar-usr-1':'#15803d','--avatar-usr-2':'#4ade80','--title-grad-start':'#edfdf2','--title-grad-end':'#86efac','--heading':'#d9f99d','--emphasis':'#bef264','--code-bg':'rgba(74,222,128,.12)','--code-text':'#d9f99d','--focus-ring':'rgba(74,222,128,.18)','--send-grad-1':'#15803d','--send-grad-2':'#4ade80','--user-text':'#ffffff','--logo-shadow':'rgba(74,222,128,.28)','--scroll-thumb':'#274236','--bubble-shadow':'rgba(0,0,0,.28)','--send-shadow':'rgba(74,222,128,.28)','--send-shadow-hover':'rgba(74,222,128,.40)','--steps-bg':'rgba(74,222,128,.07)','--error-bg':'rgba(220,60,60,.1)','--error-border':'rgba(220,60,60,.2)','--error-text':'#ffb4b4','--link-color':'#93c5fd','--link-hover':'#dbeafe'
       }},
       light: { vars: {
         '--bg':'#f6fff8','--surface2':'#ffffff','--border':'rgba(34,197,94,.16)','--accent':'#16a34a','--accent2':'#65a30d','--gold':'#4d7c0f','--text':'#16361f','--muted':'#5f7a68','--bubble-user':'linear-gradient(135deg,#16a34a,#65a30d)','--bubble-ai':'#ffffff','--bg-overlay':'rgba(246,255,248,.92)','--panel-bg':'rgba(250,255,251,.97)','--glow-1':'rgba(74,222,128,.10)','--glow-2':'rgba(190,242,100,.10)','--logo-grad-1':'#16a34a','--logo-grad-2':'#65a30d','--avatar-ai-1':'#dcfce7','--avatar-ai-2':'#bbf7d0','--avatar-usr-1':'#16a34a','--avatar-usr-2':'#65a30d','--title-grad-start':'#16361f','--title-grad-end':'#15803d','--heading':'#365314','--emphasis':'#4d7c0f','--code-bg':'rgba(34,197,94,.10)','--code-text':'#365314','--focus-ring':'rgba(34,197,94,.18)','--send-grad-1':'#16a34a','--send-grad-2':'#65a30d','--user-text':'#ffffff','--logo-shadow':'rgba(34,197,94,.24)','--scroll-thumb':'#c7dfce','--bubble-shadow':'rgba(22,54,31,.12)','--send-shadow':'rgba(34,197,94,.24)','--send-shadow-hover':'rgba(34,197,94,.34)','--steps-bg':'rgba(34,197,94,.08)','--error-bg':'rgba(220,60,60,.08)','--error-border':'rgba(220,60,60,.16)','--error-text':'#9b2c2c','--link-color':'#1d4ed8','--link-hover':'#1e40af'
+      }}
+    }
+  },
+  lavender: {
+    label: 'Lavanda',
+    description: 'Suave y editorial, con violetas apagados y mejor separacion visual.',
+    modes: {
+      dark: { vars: {
+        '--bg':'#120f1d','--surface2':'#221b34','--border':'rgba(167,139,250,.22)','--accent':'#a78bfa','--accent2':'#c4b5fd','--gold':'#f0abfc','--text':'#f3efff','--muted':'#b6a8d6','--bubble-user':'linear-gradient(135deg,#7c3aed,#a78bfa)','--bubble-ai':'#221b34','--bg-overlay':'rgba(18,15,29,.92)','--panel-bg':'rgba(18,15,29,.98)','--glow-1':'rgba(167,139,250,.14)','--glow-2':'rgba(244,114,182,.10)','--logo-grad-1':'#7c3aed','--logo-grad-2':'#c084fc','--avatar-ai-1':'#3b2b5b','--avatar-ai-2':'#8b5cf6','--avatar-usr-1':'#7c3aed','--avatar-usr-2':'#a78bfa','--title-grad-start':'#f3efff','--title-grad-end':'#d8b4fe','--heading':'#ede9fe','--emphasis':'#f5d0fe','--code-bg':'rgba(167,139,250,.14)','--code-text':'#efe3ff','--focus-ring':'rgba(167,139,250,.18)','--send-grad-1':'#7c3aed','--send-grad-2':'#a78bfa','--user-text':'#ffffff','--logo-shadow':'rgba(167,139,250,.30)','--scroll-thumb':'#3b3253','--bubble-shadow':'rgba(0,0,0,.3)','--send-shadow':'rgba(167,139,250,.34)','--send-shadow-hover':'rgba(167,139,250,.48)','--steps-bg':'rgba(167,139,250,.08)','--error-bg':'rgba(220,60,60,.1)','--error-border':'rgba(220,60,60,.22)','--error-text':'#ffb4c8','--link-color':'#c4b5fd','--link-hover':'#e9d5ff'
+      }},
+      light: { vars: {
+        '--bg':'#fcf8ff','--surface2':'#ffffff','--border':'rgba(167,139,250,.18)','--accent':'#8b5cf6','--accent2':'#a78bfa','--gold':'#d946ef','--text':'#2a1f3d','--muted':'#75658d','--bubble-user':'linear-gradient(135deg,#8b5cf6,#c084fc)','--bubble-ai':'#ffffff','--bg-overlay':'rgba(252,248,255,.92)','--panel-bg':'rgba(255,252,255,.97)','--glow-1':'rgba(196,181,253,.16)','--glow-2':'rgba(244,114,182,.10)','--logo-grad-1':'#8b5cf6','--logo-grad-2':'#c084fc','--avatar-ai-1':'#ede9fe','--avatar-ai-2':'#ddd6fe','--avatar-usr-1':'#8b5cf6','--avatar-usr-2':'#c084fc','--title-grad-start':'#2a1f3d','--title-grad-end':'#8b5cf6','--heading':'#4c1d95','--emphasis':'#86198f','--code-bg':'rgba(167,139,250,.10)','--code-text':'#5b21b6','--focus-ring':'rgba(167,139,250,.18)','--send-grad-1':'#8b5cf6','--send-grad-2':'#c084fc','--user-text':'#ffffff','--logo-shadow':'rgba(167,139,250,.22)','--scroll-thumb':'#d9cdef','--bubble-shadow':'rgba(61,42,102,.12)','--send-shadow':'rgba(167,139,250,.22)','--send-shadow-hover':'rgba(167,139,250,.32)','--steps-bg':'rgba(167,139,250,.09)','--error-bg':'rgba(220,60,60,.08)','--error-border':'rgba(220,60,60,.18)','--error-text':'#9f1239','--link-color':'#6d28d9','--link-hover':'#5b21b6'
+      }}
+    }
+  },
+  paper: {
+    label: 'Papel',
+    description: 'Mas tactil y clasico, con tonos crema y contraste menos estridente.',
+    modes: {
+      dark: { vars: {
+        '--bg':'#171311','--surface2':'#26201b','--border':'rgba(212,175,107,.18)','--accent':'#d4af6b','--accent2':'#f3d49b','--gold':'#f6e3bd','--text':'#f4eee3','--muted':'#b8aa96','--bubble-user':'linear-gradient(135deg,#9a6a2f,#d4af6b)','--bubble-ai':'#26201b','--bg-overlay':'rgba(23,19,17,.92)','--panel-bg':'rgba(23,19,17,.98)','--glow-1':'rgba(212,175,107,.12)','--glow-2':'rgba(246,227,189,.08)','--logo-grad-1':'#9a6a2f','--logo-grad-2':'#d4af6b','--avatar-ai-1':'#4a3c30','--avatar-ai-2':'#b08956','--avatar-usr-1':'#9a6a2f','--avatar-usr-2':'#d4af6b','--title-grad-start':'#f8f1e5','--title-grad-end':'#f3d49b','--heading':'#f1dec2','--emphasis':'#f6e3bd','--code-bg':'rgba(212,175,107,.12)','--code-text':'#f7e6c2','--focus-ring':'rgba(212,175,107,.18)','--send-grad-1':'#9a6a2f','--send-grad-2':'#d4af6b','--user-text':'#ffffff','--logo-shadow':'rgba(212,175,107,.24)','--scroll-thumb':'#4a4138','--bubble-shadow':'rgba(0,0,0,.26)','--send-shadow':'rgba(212,175,107,.26)','--send-shadow-hover':'rgba(212,175,107,.36)','--steps-bg':'rgba(212,175,107,.08)','--error-bg':'rgba(220,60,60,.1)','--error-border':'rgba(220,60,60,.2)','--error-text':'#ffb4b4','--link-color':'#93c5fd','--link-hover':'#dbeafe'
+      }},
+      light: { vars: {
+        '--bg':'#f7f1e6','--surface2':'#fffdf8','--border':'rgba(181,139,72,.18)','--accent':'#b58b48','--accent2':'#d4af6b','--gold':'#8c6a34','--text':'#30261a','--muted':'#7d6c55','--bubble-user':'linear-gradient(135deg,#b58b48,#d4af6b)','--bubble-ai':'#fffdf8','--bg-overlay':'rgba(247,241,230,.92)','--panel-bg':'rgba(255,252,245,.97)','--glow-1':'rgba(212,175,107,.12)','--glow-2':'rgba(245,222,179,.12)','--logo-grad-1':'#b58b48','--logo-grad-2':'#d4af6b','--avatar-ai-1':'#f0e4cd','--avatar-ai-2':'#e7d3ae','--avatar-usr-1':'#b58b48','--avatar-usr-2':'#d4af6b','--title-grad-start':'#30261a','--title-grad-end':'#a3752f','--heading':'#6f4e1f','--emphasis':'#8c6a34','--code-bg':'rgba(181,139,72,.10)','--code-text':'#6f4e1f','--focus-ring':'rgba(181,139,72,.18)','--send-grad-1':'#b58b48','--send-grad-2':'#d4af6b','--user-text':'#ffffff','--logo-shadow':'rgba(181,139,72,.22)','--scroll-thumb':'#d9ccb7','--bubble-shadow':'rgba(86,69,44,.12)','--send-shadow':'rgba(181,139,72,.24)','--send-shadow-hover':'rgba(181,139,72,.32)','--steps-bg':'rgba(181,139,72,.08)','--error-bg':'rgba(220,60,60,.08)','--error-border':'rgba(220,60,60,.16)','--error-text':'#9b2c2c','--link-color':'#1d4ed8','--link-hover':'#1e40af'
+      }}
+    }
+  },
+  highContrast: {
+    label: 'Alto contraste',
+    description: 'Mas nitido y legible, pensado para separar mejor texto, superficies y acciones.',
+    modes: {
+      dark: { vars: {
+        '--bg':'#060708','--surface2':'#111315','--border':'rgba(125,211,252,.28)','--accent':'#7dd3fc','--accent2':'#67e8f9','--gold':'#f8fafc','--text':'#f8fafc','--muted':'#cbd5e1','--bubble-user':'linear-gradient(135deg,#0284c7,#38bdf8)','--bubble-ai':'#111315','--bg-overlay':'rgba(6,7,8,.94)','--panel-bg':'rgba(6,7,8,.985)','--glow-1':'rgba(125,211,252,.12)','--glow-2':'rgba(255,255,255,.06)','--logo-grad-1':'#0284c7','--logo-grad-2':'#38bdf8','--avatar-ai-1':'#1b1e22','--avatar-ai-2':'#334155','--avatar-usr-1':'#0284c7','--avatar-usr-2':'#38bdf8','--title-grad-start':'#ffffff','--title-grad-end':'#7dd3fc','--heading':'#f8fafc','--emphasis':'#67e8f9','--code-bg':'rgba(125,211,252,.12)','--code-text':'#f8fafc','--focus-ring':'rgba(125,211,252,.24)','--send-grad-1':'#0284c7','--send-grad-2':'#38bdf8','--user-text':'#ffffff','--logo-shadow':'rgba(56,189,248,.28)','--scroll-thumb':'#475569','--bubble-shadow':'rgba(0,0,0,.36)','--send-shadow':'rgba(56,189,248,.32)','--send-shadow-hover':'rgba(56,189,248,.42)','--steps-bg':'rgba(125,211,252,.08)','--error-bg':'rgba(220,60,60,.12)','--error-border':'rgba(248,113,113,.24)','--error-text':'#fecaca','--link-color':'#93c5fd','--link-hover':'#dbeafe'
+      }},
+      light: { vars: {
+        '--bg':'#f9fbff','--surface2':'#ffffff','--border':'rgba(2,132,199,.26)','--accent':'#0369a1','--accent2':'#0ea5e9','--gold':'#082f49','--text':'#0f172a','--muted':'#475569','--bubble-user':'linear-gradient(135deg,#0369a1,#0ea5e9)','--bubble-ai':'#ffffff','--bg-overlay':'rgba(249,251,255,.94)','--panel-bg':'rgba(255,255,255,.985)','--glow-1':'rgba(14,165,233,.1)','--glow-2':'rgba(2,132,199,.08)','--logo-grad-1':'#0369a1','--logo-grad-2':'#0ea5e9','--avatar-ai-1':'#e2e8f0','--avatar-ai-2':'#cbd5e1','--avatar-usr-1':'#0369a1','--avatar-usr-2':'#0ea5e9','--title-grad-start':'#0f172a','--title-grad-end':'#0369a1','--heading':'#082f49','--emphasis':'#0369a1','--code-bg':'rgba(2,132,199,.10)','--code-text':'#082f49','--focus-ring':'rgba(14,165,233,.22)','--send-grad-1':'#0369a1','--send-grad-2':'#0ea5e9','--user-text':'#ffffff','--logo-shadow':'rgba(14,165,233,.18)','--scroll-thumb':'#b8c6d8','--bubble-shadow':'rgba(15,23,42,.12)','--send-shadow':'rgba(14,165,233,.2)','--send-shadow-hover':'rgba(14,165,233,.28)','--steps-bg':'rgba(14,165,233,.08)','--error-bg':'rgba(220,60,60,.08)','--error-border':'rgba(220,60,60,.18)','--error-text':'#991b1b','--link-color':'#1d4ed8','--link-hover':'#1e40af'
       }}
     }
   }
@@ -530,7 +852,6 @@ const sendBtn = document.getElementById('sendBtn');
 const keyPanel = document.getElementById('key-panel');
 const themePanel = document.getElementById('theme-panel');
 const providerSelect = document.getElementById('providerSelect');
-const settingsProviderSelect = document.getElementById('settingsProviderSelect');
 const modelSelect = document.getElementById('modelSelect');
 const tempSelect = document.getElementById('tempSelect');
 const keyInput = document.getElementById('apiKeyInput');
@@ -589,7 +910,13 @@ function renderThemeCards() {
   if (!themeGrid) return;
   const html = Object.entries(THEMES).map(([id, theme]) => {
     const palette = theme.modes[activeThemeMode]?.vars || theme.modes.dark.vars;
-    return `<button type="button" class="theme-card ${id === activeThemeId ? 'active' : ''}" onclick="setTheme('${id}')"><div class="theme-card-title">${theme.label}</div><div class="theme-card-meta">${activeThemeMode === 'dark' ? 'Oscuro' : 'Claro'}</div><div class="theme-swatches"><span class="sw" style="background:${palette['--accent']}"></span><span class="sw" style="background:${palette['--surface2']}"></span><span class="sw" style="background:${palette['--text']}"></span></div></button>`;
+    const surface = palette['--surface2'];
+    const accent = palette['--accent'];
+    const text = palette['--text'];
+    const accentSoft = `color-mix(in srgb, ${accent} 26%, transparent)`;
+    const previewBg = `linear-gradient(135deg, ${palette['--bg-overlay'] || palette['--bg']} 0%, ${surface} 100%)`;
+    const textSoft = `color-mix(in srgb, ${text} 72%, transparent)`;
+    return `<button type="button" class="theme-card ${id === activeThemeId ? 'active' : ''}" onclick="setTheme('${id}')" style="--theme-accent:${accent};--theme-surface:${surface};--theme-text-soft:${textSoft};--theme-preview-bg:${previewBg};--theme-accent-soft:${accentSoft}"><div class="theme-card-top"><div class="theme-card-title">${theme.label}</div><div class="theme-card-meta">${activeThemeMode === 'dark' ? 'Oscuro' : 'Claro'}</div></div><div class="theme-card-desc">${theme.description || ''}</div><div class="theme-preview"><div class="theme-preview-head"><div class="theme-preview-pill"></div><div class="theme-preview-dot"></div></div><div class="theme-preview-lines"><div class="theme-preview-line"></div><div class="theme-preview-line short"></div><div class="theme-preview-line"></div></div></div><div class="theme-swatches"><span class="sw" style="background:${accent}"></span><span class="sw" style="background:${surface}"></span><span class="sw" style="background:${text}"></span></div></button>`;
   }).join('');
   themeGrid.innerHTML = html;
 }
@@ -706,7 +1033,6 @@ function setKeyStatus(el, valid) {
 
 function syncProviderFields() {
   providerSelect.value = activeProvider;
-  settingsProviderSelect.value = activeProvider;
   keyInput.value = getCurrentKey();
   keyInput.placeholder = getProviderConfig(activeProvider).placeholder;
   providerKeyLink.href = getProviderConfig(activeProvider).keyLink;
@@ -820,11 +1146,56 @@ function showWelcome() {
       <button onclick="refreshWords()" class="refresh-btn">🔄 Otras palabras</button>
     </div>`;
   chatDiv.appendChild(welcome);
+
+  const steps = welcome.querySelector('.steps');
+  const title = steps?.querySelector('b');
+  const refreshBtn = steps?.querySelector('.refresh-btn');
+  if (steps && title) {
+    const header = document.createElement('div');
+    header.className = 'steps-header';
+
+    const titleWrap = document.createElement('div');
+    titleWrap.className = 'steps-title-wrap';
+    titleWrap.appendChild(title);
+
+    const subtitle = document.createElement('p');
+    subtitle.className = 'steps-subtitle';
+    subtitle.textContent = 'Elige un nivel y toca cualquier tarjeta para lanzar una practica rapida con una presentacion mas limpia y comoda en movil.';
+    titleWrap.appendChild(subtitle);
+
+    header.appendChild(titleWrap);
+    steps.prepend(header);
+  }
+
+  if (steps && refreshBtn) {
+    const footer = document.createElement('div');
+    footer.className = 'steps-footer';
+    refreshBtn.parentNode.insertBefore(footer, refreshBtn);
+    footer.appendChild(refreshBtn);
+  }
 }
 
 function scrollBottom(force = false) {
   const dist = chatDiv.scrollHeight - chatDiv.scrollTop - chatDiv.clientHeight;
   if (force || dist < 80) chatDiv.scrollTop = chatDiv.scrollHeight;
+}
+
+function getScrollTargetForUser(userEl) {
+  if (!userEl) return null;
+  const topGap = 10;
+  return Math.max(0, userEl.offsetTop - topGap);
+}
+
+function scrollToUserAnchor(userEl, force = false) {
+  const target = getScrollTargetForUser(userEl);
+  if (target == null) return;
+  if (force) {
+    chatDiv.scrollTop = target;
+    return;
+  }
+  const delta = target - chatDiv.scrollTop;
+  if (Math.abs(delta) < 1) return;
+  chatDiv.scrollTop += Math.sign(delta) * Math.max(10, Math.abs(delta) * 0.22);
 }
 
 function closeAllMessageActions() {
@@ -916,7 +1287,8 @@ function addUserBubble(text, turnId = getNextTurnId()) {
   wrapper.dataset.rawText = text;
   wrapper.innerHTML = `<div class="avatar usr">👤</div><div class="msg-content"><div class="bubble user">${escapeHtml(text)}</div>${buildMessageActions()}</div>`;
   chatDiv.appendChild(wrapper);
-  scrollBottom(true);
+  scrollToUserAnchor(wrapper);
+  return wrapper;
 }
 
 function addAIBubble(markdownText, turnId = getNextTurnId()) {
@@ -928,7 +1300,15 @@ function addAIBubble(markdownText, turnId = getNextTurnId()) {
   wrapper.dataset.rawText = raw;
   wrapper.innerHTML = `<div class="avatar ai">🗣️</div><div class="msg-content"><div class="bubble ai">${marked.parse(raw)}</div>${buildMessageActions()}</div>`;
   chatDiv.appendChild(wrapper);
-  scrollBottom();
+  return wrapper;
+}
+
+function updateAIBubble(aiEl, markdownText) {
+  if (!aiEl) return;
+  const raw = String(markdownText || '');
+  aiEl.dataset.rawText = raw;
+  const bubble = aiEl.querySelector('.bubble.ai');
+  if (bubble) bubble.innerHTML = raw ? marked.parse(raw) : `<div class="typing-wrap"><span></span><span></span><span></span></div>`;
 }
 
 function addTypingRow() {
@@ -940,18 +1320,71 @@ function addTypingRow() {
   scrollBottom(true);
 }
 
-async function callProvider(messages, model, temperature, signal) {
+async function callProvider(messages, model, temperature, signal, onChunk) {
   const key = getCurrentKey();
   if (!isKeyValid(activeProvider, key)) throw new Error(`Falta API key valida de ${getProviderConfig(activeProvider).label}.`);
   const res = await fetch(getProviderConfig(activeProvider).completionsUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-    body: JSON.stringify({ model, temperature, max_tokens: 1500, messages }),
+    body: JSON.stringify({ model, temperature, max_tokens: 1500, stream: true, messages }),
     signal
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error?.message || `Error HTTP ${res.status}`);
-  return data?.choices?.[0]?.message?.content || '';
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.error?.message || `Error HTTP ${res.status}`);
+  }
+
+  if (!res.body) {
+    const data = await res.json().catch(() => ({}));
+    const fallback = data?.choices?.[0]?.message?.content || '';
+    onChunk?.(fallback, true);
+    return fallback;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let finalText = '';
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const events = buffer.split('\n\n');
+    buffer = events.pop() || '';
+
+    for (const event of events) {
+      const lines = event.split('\n').map((line) => line.trim()).filter(Boolean);
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        const payload = line.slice(5).trim();
+        if (!payload || payload === '[DONE]') continue;
+        let parsed;
+        try { parsed = JSON.parse(payload); } catch { continue; }
+        const delta = parsed?.choices?.[0]?.delta?.content ?? parsed?.choices?.[0]?.message?.content ?? '';
+        if (!delta) continue;
+        finalText += delta;
+        onChunk?.(finalText, false);
+      }
+    }
+  }
+
+  if (buffer.trim()) {
+    const trailing = buffer.split('\n').map((line) => line.trim()).filter((line) => line.startsWith('data:'));
+    for (const line of trailing) {
+      const payload = line.slice(5).trim();
+      if (!payload || payload === '[DONE]') continue;
+      let parsed;
+      try { parsed = JSON.parse(payload); } catch { continue; }
+      const delta = parsed?.choices?.[0]?.delta?.content ?? parsed?.choices?.[0]?.message?.content ?? '';
+      if (!delta) continue;
+      finalText += delta;
+      onChunk?.(finalText, false);
+    }
+  }
+
+  onChunk?.(finalText, true);
+  return finalText;
 }
 
 function stopGeneration() {
@@ -989,9 +1422,11 @@ async function sendMessage(forcedText = '') {
   inputEl.style.height = 'auto';
 
   const turnId = editingTurnId || getNextTurnId();
-  if (!editingTurnId) addUserBubble(text, turnId);
-  addTypingRow();
+  if (!editingTurnId) userEl = addUserBubble(text, turnId);
   buildConversationHistoryFromDOM();
+  scrollToUserAnchor(userEl || getTurnElements(turnId).userEl);
+  aiEl = addAIBubble('', turnId);
+  updateAIBubble(aiEl, '');
 
   const notes = notesInput.value.trim();
   const messages = [
@@ -1000,23 +1435,31 @@ async function sendMessage(forcedText = '') {
   ];
 
   try {
-    const finalText = await callProvider(messages, modelSelect.value, parseFloat(document.getElementById('tempSelect').value), activeRequestController.signal);
-    document.getElementById('typing-row')?.remove();
-    addAIBubble(finalText || 'Sin respuesta del modelo.', turnId);
+    const finalText = await callProvider(
+      messages,
+      modelSelect.value,
+      parseFloat(document.getElementById('tempSelect').value),
+      activeRequestController.signal,
+      (partialText) => {
+        updateAIBubble(aiEl, partialText);
+        scrollToUserAnchor(userEl || getTurnElements(turnId).userEl);
+      }
+    );
+    updateAIBubble(aiEl, finalText || 'Sin respuesta del modelo.');
     clearEditingState();
     buildConversationHistoryFromDOM();
   } catch (err) {
-    document.getElementById('typing-row')?.remove();
     if (String(err?.name || '') === 'AbortError') {
-      addAIBubble('⏹ Respuesta detenida por el usuario.', turnId);
+      updateAIBubble(aiEl, (aiEl?.dataset?.rawText || '') || '⏹ Respuesta detenida por el usuario.');
       clearEditingState();
       buildConversationHistoryFromDOM();
     } else {
+      aiEl?.remove();
       const errorBubble = document.createElement('div');
       errorBubble.className = 'error-bubble';
       errorBubble.textContent = `❌ ${err?.message || String(err)}`;
       chatDiv.appendChild(errorBubble);
-      scrollBottom();
+      scrollToUserAnchor(userEl || getTurnElements(turnId).userEl);
     }
   } finally {
     isLoading = false;
@@ -1042,7 +1485,6 @@ inputEl.addEventListener('keydown', (e) => {
 });
 
 providerSelect.addEventListener('change', () => switchProvider(providerSelect.value));
-settingsProviderSelect.addEventListener('change', () => switchProvider(settingsProviderSelect.value));
 modelSelect.addEventListener('change', () => setSavedModel(activeProvider, modelSelect.value));
 
 groqKeyInput.value = getStoredKey('groq');
