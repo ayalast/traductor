@@ -43,7 +43,6 @@ export default function App() {
   return (
     <>
       <Outlet />
-      <VersionBadge />
       <DiagnosticsPanel isOpen={isDiagnosticsOpen} onClose={() => setIsDiagnosticsOpen(false)} />
     </>
   )

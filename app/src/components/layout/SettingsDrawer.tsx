@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { ProviderId } from '../../lib/providers'
 import {
   THEMES,
@@ -13,6 +13,7 @@ import {
   getPaperTextureSettings,
   setPaperTextureSettings,
 } from '../../lib/themes'
+import packageJson from '../../../package.json'
 
 type SettingsDrawerProps = {
   isOpen: boolean
@@ -20,6 +21,7 @@ type SettingsDrawerProps = {
   activeProvider: ProviderId
   activeTemperature: number
   onTemperatureChange: (temp: number) => void
+  children?: ReactNode
 }
 
 export function SettingsDrawer({
@@ -28,11 +30,15 @@ export function SettingsDrawer({
   activeProvider,
   activeTemperature,
   onTemperatureChange,
+  children,
 }: SettingsDrawerProps) {
   const [tempValue, setTempValue] = useState(activeTemperature)
   const [activeTheme, setActiveTheme] = useState<ThemeId>(getStoredTheme())
   const [activeMode, setActiveMode] = useState<ThemeMode>(getStoredMode())
   const [paperSettings, setPaperSettings] = useState(getPaperTextureSettings())
+
+  const version = packageJson.version
+  const buildDate = import.meta.env.VITE_BUILD_DATE || new Date().toISOString().split('T')[0]
 
   useEffect(() => {
     applyTheme(activeTheme, activeMode)
@@ -88,198 +94,112 @@ export function SettingsDrawer({
 
   return (
     <>
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          zIndex: 999,
-        }}
-        onClick={onClose}
-      />
-      <aside
-        style={{
-          position: 'fixed',
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width: 'min(450px, 90vw)',
-          background: 'var(--surface)',
-          boxShadow: '-4px 0 12px rgba(0, 0, 0, 0.2)',
-          zIndex: 1000,
-          display: 'flex',
-          flexDirection: 'column',
-          animation: 'slideInRight 0.3s ease-out',
-        }}
-      >
-        <header
-          style={{
-            padding: '1.5rem',
-            borderBottom: '1px solid var(--border)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>⚙️ Configuración</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              padding: '0.25rem',
-              lineHeight: 1,
-            }}
-          >
-            ×
-          </button>
+      <div className="settings-drawer__overlay" onClick={onClose} />
+      <aside className="settings-drawer">
+        <header className="settings-drawer__header">
+          <h2>⚙️ Configuración</h2>
+          <button type="button" onClick={onClose} className="settings-drawer__close">×</button>
         </header>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
+        <div className="settings-drawer__content">
+          {children && <div className="settings-drawer__custom-content">{children}</div>}
+
           {/* Temas */}
-          <section style={{ marginBottom: '2rem' }}>
-            <h3 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>🎨 Tema visual</h3>
+          <section className="settings-section">
+            <h3 className="eyebrow">🎨 Tema visual</h3>
             
             {/* Modo claro/oscuro */}
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+            <div className="settings-drawer__mode-toggle">
               <button
                 type="button"
                 onClick={() => handleModeChange('dark')}
-                style={{
-                  flex: 1,
-                  padding: '0.75rem',
-                  background: activeMode === 'dark' ? 'var(--accent)' : 'var(--surface-elevated)',
-                  color: activeMode === 'dark' ? 'white' : 'var(--text)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                }}
+                className={activeMode === 'dark' ? 'active' : ''}
               >
                 🌙 Oscuro
               </button>
               <button
                 type="button"
                 onClick={() => handleModeChange('light')}
-                style={{
-                  flex: 1,
-                  padding: '0.75rem',
-                  background: activeMode === 'light' ? 'var(--accent)' : 'var(--surface-elevated)',
-                  color: activeMode === 'light' ? 'white' : 'var(--text)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                }}
+                className={activeMode === 'light' ? 'active' : ''}
               >
                 ☀️ Claro
               </button>
             </div>
 
             {/* Selector de temas */}
-            <div style={{ display: 'grid', gap: '0.75rem' }}>
+            <div className="settings-drawer__theme-grid">
               {(Object.entries(THEMES) as [ThemeId, typeof THEMES[ThemeId]][]).map(([id, theme]) => (
                 <button
                   key={id}
                   type="button"
                   onClick={() => handleThemeChange(id)}
-                  style={{
-                    padding: '1rem',
-                    background: activeTheme === id ? 'var(--accent)' : 'var(--surface-elevated)',
-                    color: activeTheme === id ? 'white' : 'var(--text)',
-                    border: `2px solid ${activeTheme === id ? 'var(--accent)' : 'var(--border)'}`,
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
+                  className={`theme-card ${activeTheme === id ? 'active' : ''}`}
                 >
-                  <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{theme.label}</div>
-                  <div style={{ fontSize: '0.75rem', opacity: 0.9 }}>{theme.description}</div>
+                  <strong>{theme.label}</strong>
+                  <p>{theme.description}</p>
                 </button>
               ))}
             </div>
           </section>
 
           {/* Texturas */}
-          <section style={{ marginBottom: '2rem' }}>
-            <h3 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>📄 Texturas</h3>
+          <section className="settings-section">
+            <h3 className="eyebrow">📄 Texturas</h3>
             
-            {/* Textura de fondo */}
-            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'var(--surface-elevated)', borderRadius: '10px', border: '1px solid var(--border)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Textura en fondo</label>
+            <div className="settings-drawer__control-card">
+              <div className="settings-drawer__control-row">
+                <label>Textura en fondo</label>
                 <input
                   type="checkbox"
                   checked={paperSettings.enabled}
                   onChange={(e) => handlePaperTextureToggle(e.target.checked)}
-                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                 />
               </div>
               {paperSettings.enabled && (
-                <>
+                <div className="settings-drawer__slider-group">
                   <input
                     type="range"
                     min="0"
                     max="100"
                     value={paperSettings.level}
                     onChange={(e) => handlePaperTextureLevel(Number(e.target.value))}
-                    style={{ width: '100%', marginBottom: '0.5rem' }}
                   />
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'right' }}>
-                    {paperSettings.level}%
-                  </div>
-                </>
+                  <span>{paperSettings.level}%</span>
+                </div>
               )}
             </div>
 
-            {/* Textura global */}
-            <div style={{ padding: '1rem', background: 'var(--surface-elevated)', borderRadius: '10px', border: '1px solid var(--border)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>Textura general</label>
+            <div className="settings-drawer__control-card">
+              <div className="settings-drawer__control-row">
+                <label>Textura general</label>
                 <input
                   type="checkbox"
                   checked={paperSettings.globalEnabled}
                   onChange={(e) => handlePaperGlobalToggle(e.target.checked)}
-                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                 />
               </div>
               {paperSettings.globalEnabled && (
-                <>
+                <div className="settings-drawer__slider-group">
                   <input
                     type="range"
                     min="0"
                     max="100"
                     value={paperSettings.globalLevel}
                     onChange={(e) => handlePaperGlobalLevel(Number(e.target.value))}
-                    style={{ width: '100%', marginBottom: '0.5rem' }}
                   />
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'right' }}>
-                    {paperSettings.globalLevel}%
-                  </div>
-                </>
+                  <span>{paperSettings.globalLevel}%</span>
+                </div>
               )}
             </div>
           </section>
 
           {/* Temperatura */}
-          <section style={{ marginBottom: '2rem' }}>
-            <h3 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>🌡️ Temperatura</h3>
-            <div
-              style={{
-                padding: '1rem',
-                background: 'var(--surface-elevated)',
-                border: '1px solid var(--border)',
-                borderRadius: '10px',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Creatividad</span>
-                <strong style={{ fontSize: '1.125rem' }}>{tempValue.toFixed(2)}</strong>
+          <section className="settings-section">
+            <h3 className="eyebrow">🌡️ Temperatura</h3>
+            <div className="settings-drawer__control-card">
+              <div className="settings-drawer__control-row">
+                <span>Creatividad</span>
+                <strong>{tempValue.toFixed(2)}</strong>
               </div>
               <input
                 type="range"
@@ -288,45 +208,70 @@ export function SettingsDrawer({
                 step="0.05"
                 value={tempValue}
                 onChange={(e) => handleTemperatureChange(parseFloat(e.target.value))}
-                style={{ width: '100%' }}
+                className="settings-drawer__slider"
               />
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                <span>Preciso (0.0)</span>
-                <span>Creativo (1.0)</span>
+              <div className="settings-drawer__slider-labels">
+                <span>Preciso</span>
+                <span>Creativo</span>
               </div>
             </div>
           </section>
 
-          {/* Proveedor */}
-          <section>
-            <h3 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '1rem' }}>🔌 Proveedor activo</h3>
-            <div
-              style={{
-                padding: '1rem',
-                background: 'var(--surface-elevated)',
-                border: '1px solid var(--border)',
-                borderRadius: '10px',
-              }}
-            >
-              <strong style={{ textTransform: 'capitalize' }}>{activeProvider}</strong>
-              <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                Cambia el proveedor desde el panel lateral
-              </p>
+          {/* Atajos de teclado */}
+          <section className="settings-section">
+            <h3 className="eyebrow">⌨️ Atajos de teclado</h3>
+            <div className="settings-drawer__control-card" style={{ display: 'grid', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                <span color="var(--text-secondary)">Enviar mensaje</span>
+                <kbd style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border)' }}>Enter</kbd>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                <span color="var(--text-secondary)">Salto de línea</span>
+                <kbd style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border)' }}>Shift + Enter</kbd>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                <span color="var(--text-secondary)">Cancelar edición</span>
+                <kbd style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border)' }}>Esc</kbd>
+              </div>
+            </div>
+          </section>
+
+          {/* Ayuda y Feedback */}
+          <section className="settings-section">
+            <h3 className="eyebrow">🆘 Ayuda y Feedback</h3>
+            <div className="settings-drawer__control-card" style={{ display: 'grid', gap: '0.5rem' }}>
+              <button 
+                className="theme-card" 
+                style={{ padding: '0.75rem', width: '100%', marginBottom: 0 }}
+                onClick={() => window.open('https://github.com/danny-avila/LibreChat', '_blank')}
+              >
+                <strong>Documentación</strong>
+                <p>Guía de uso y configuración.</p>
+              </button>
+              <button 
+                className="theme-card" 
+                style={{ padding: '0.75rem', width: '100%', marginBottom: 0 }}
+                onClick={() => alert('¡Gracias! Envía tus comentarios a: support@mi-traductor.ai')}
+              >
+                <strong>Reportar un error</strong>
+                <p>Ayúdanos a mejorar el sistema.</p>
+              </button>
+            </div>
+          </section>
+
+          {/* Info del sistema */}
+          <section className="settings-section" style={{ marginTop: 'auto', paddingTop: '2rem' }}>
+            <div style={{ padding: '1rem', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface-elevated)', textAlign: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <span className="status-dot"></span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent)' }}>Sistema Sincronizado</span>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 600, color: 'var(--text)' }}>Mi Traductor v{version}</p>
+              <p style={{ margin: '0.25rem 0 0', fontSize: '0.7rem', color: 'var(--text-muted)' }}>Build: {buildDate}</p>
             </div>
           </section>
         </div>
       </aside>
-
-      <style>{`
-        @keyframes slideInRight {
-          from {
-            transform: translateX(100%);
-          }
-          to {
-            transform: translateX(0);
-          }
-        }
-      `}</style>
     </>
   )
 }

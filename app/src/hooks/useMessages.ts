@@ -11,13 +11,14 @@ export type MessageRecord = {
   status: 'complete' | 'partial' | 'error'
   reasoning_summary: string | null
   created_at: string
+  parent_message_id: string | null
 }
 
 type UseMessagesResult = {
   messages: MessageRecord[]
   isLoading: boolean
   error: string | null
-  refresh: () => Promise<void>
+  refresh: (overrideId?: string | null) => Promise<void>
 }
 
 export function useMessages(conversationId: string | null, enabled = true): UseMessagesResult {
@@ -25,8 +26,9 @@ export function useMessages(conversationId: string | null, enabled = true): UseM
   const [isLoading, setIsLoading] = useState(Boolean(enabled && conversationId))
   const [error, setError] = useState<string | null>(null)
 
-  const refresh = useCallback(async () => {
-    if (!enabled || !conversationId) {
+  const refresh = useCallback(async (overrideId?: string | null) => {
+    const targetId = overrideId !== undefined ? overrideId : conversationId
+    if (!enabled || !targetId) {
       setMessages([])
       setIsLoading(false)
       setError(null)
@@ -38,8 +40,8 @@ export function useMessages(conversationId: string | null, enabled = true): UseM
 
     const { data, error: queryError } = await supabase
       .from('messages')
-      .select('id, conversation_id, role, content, turn_index, status, reasoning_summary, created_at')
-      .eq('conversation_id', conversationId)
+      .select('id, conversation_id, role, content, turn_index, status, reasoning_summary, created_at, parent_message_id')
+      .eq('conversation_id', targetId)
       .order('created_at', { ascending: true })
 
     if (queryError) {

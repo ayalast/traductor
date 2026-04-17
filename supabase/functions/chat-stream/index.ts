@@ -17,6 +17,31 @@ function encodeSse(event: string, data: Record<string, unknown>) {
 }
 
 async function getConversationContext(client, conversationId, options = {}) {
+  // Si tenemos un parentMessageId, reconstruimos el historial hacia atrás
+  if (options.parentMessageId) {
+    const { data: allMessages, error } = await client
+      .from('messages')
+      .select('id, role, content, parent_message_id, created_at')
+      .eq('conversation_id', conversationId)
+      .in('role', ['user', 'assistant'])
+    
+    if (error) throw new Error(`Error al cargar árbol: ${error.message}`)
+
+    const history = []
+    let currentId = options.parentMessageId
+    const msgMap = new Map(allMessages.map(m => [m.id, m]))
+
+    while (currentId) {
+      const msg = msgMap.get(currentId)
+      if (!msg) break
+      history.unshift({ role: msg.role, content: msg.content })
+      currentId = msg.parent_message_id
+    }
+
+    return history
+  }
+
+  // Fallback al comportamiento lineal por turnos si no hay parentMessageId
   let query = client
     .from('messages')
     .select('role, content, turn_index')
@@ -29,15 +54,131 @@ async function getConversationContext(client, conversationId, options = {}) {
   }
 
   const { data, error } = await query
-
-  if (error) {
-    throw new Error(`No se pudo cargar el historial del chat: ${error.message}`)
-  }
+  if (error) throw new Error(`No se pudo cargar el historial: ${error.message}`)
 
   return (data ?? []).map((item) => ({
     role: item.role,
     content: item.content,
   }))
+}
+
+async function getLatestMessage(client, conversationId) {
+  const { data, error } = await client
+    .from('messages')
+    .select('id, turn_index')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
+
+async function insertUserMessage(client, userId, conversationId, input, parentId = null, turnIndex = null) {
+  const effectiveTurnIndex = turnIndex ?? (await getNextTurnIndex(client, conversationId))
+
+  const { data, error } = await client
+    .from('messages')
+    .insert({
+      conversation_id: conversationId,
+      role: 'user',
+      content: input,
+      turn_index: effectiveTurnIndex,
+      parent_message_id: parentId,
+      status: 'complete',
+    })
+    .select('id, turn_index, content')
+    .single()
+
+  if (error || !data) {
+    throw new Error(`No se pudo guardar el mensaje del usuario: ${error?.message || 'Error desconocido.'}`)
+  }
+
+  return data
+}
+
+async function insertAssistantMessage(client, userId, conversationId, turnIndex, content, parentId = null, reasoningSummary = null) {
+  const { data, error } = await client
+    .from('messages')
+    .insert({
+      conversation_id: conversationId,
+      role: 'assistant',
+      content,
+      turn_index: turnIndex,
+      parent_message_id: parentId,
+      status: 'complete',
+      reasoning_summary: reasoningSummary,
+    })
+    .select('id')
+    .single()
+
+  if (error || !data) {
+    throw new Error(`No se pudo guardar el mensaje del asistente: ${error?.message || 'Error desconocido.'}`)
+  }
+
+  return data.id
+}
+
+async function prepareOperationState(client, userId, conversationId, payload) {
+  const mode = payload.mode || 'new'
+
+  if (mode === 'retry') {
+    const targetId = payload.targetMessageId || (await getLatestMessage(client, conversationId))?.id
+    if (!targetId) throw new Error('No hay mensaje para reintentar.')
+
+    const { data: targetMsg } = await client.from('messages').select('*').eq('id', targetId).single()
+    
+    // Si reintentamos una respuesta de la IA, el padre del nuevo intento es el mensaje del usuario previo
+    if (targetMsg.role === 'assistant') {
+      const history = await getConversationContext(client, conversationId, { parentMessageId: targetMsg.parent_message_id })
+      const userContentObj = history.pop() // Remove the last user message from history to prevent duplication
+      return {
+        history,
+        userMessage: { id: targetMsg.parent_message_id, turn_index: targetMsg.turn_index },
+        userContent: userContentObj?.content || '',
+      }
+    }
+
+    // Si reintentamos un mensaje del usuario, creamos una nueva versión de ese mensaje
+    if (targetMsg.role === 'user') {
+      const parentId = targetMsg.parent_message_id
+      const history = await getConversationContext(client, conversationId, { parentMessageId: parentId })
+      const newUserMsg = await insertUserMessage(client, userId, conversationId, targetMsg.content, parentId, targetMsg.turn_index)
+      return {
+        history,
+        userMessage: newUserMsg,
+        userContent: targetMsg.content,
+      }
+    }
+  }
+
+  if (mode === 'edit') {
+    const targetId = payload.targetMessageId
+    if (!targetId) throw new Error('ID de mensaje obligatorio para editar.')
+
+    const { data: targetMsg } = await client.from('messages').select('*').eq('id', targetId).single()
+    const parentId = targetMsg.parent_message_id
+    const history = await getConversationContext(client, conversationId, { parentMessageId: parentId })
+    const newUserMsg = await insertUserMessage(client, userId, conversationId, payload.input.trim(), parentId, targetMsg.turn_index)
+
+    return {
+      history,
+      userMessage: newUserMsg,
+      userContent: payload.input.trim(),
+    }
+  }
+
+  // Nuevo mensaje (Modo Linear)
+  const lastMsg = await getLatestMessage(client, conversationId)
+  const history = await getConversationContext(client, conversationId, { parentMessageId: lastMsg?.id })
+  const userMessage = await insertUserMessage(client, userId, conversationId, payload.input.trim(), lastMsg?.id)
+
+  return {
+    history,
+    userMessage,
+    userContent: payload.input.trim(),
+  }
 }
 
 async function getNextTurnIndex(client, conversationId) {
@@ -49,32 +190,33 @@ async function getNextTurnIndex(client, conversationId) {
     .limit(1)
     .maybeSingle()
 
-  if (error) {
-    throw new Error(`No se pudo calcular el siguiente turno: ${error.message}`)
-  }
-
   return (data?.turn_index ?? 0) + 1
 }
 
-async function getLatestUserMessage(client, conversationId) {
-  const { data, error } = await client
-    .from('messages')
-    .select('id, content, turn_index')
-    .eq('conversation_id', conversationId)
-    .eq('role', 'user')
-    .order('turn_index', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (error) {
-    throw new Error(`No se pudo cargar el último mensaje del usuario: ${error.message}`)
+function extractReasoningSummary(content) {
+  if (!content || content.length < 50) {
+    return null
   }
 
-  if (!data) {
-    throw new Error('No existe un mensaje de usuario para reintentar.')
+  const reasoningPatterns = [
+    /(?:^|\n)(?:##?\s*)?(?:Razonamiento|Reasoning|Análisis|Analysis|Pensamiento|Thinking)[:\s]*\n([\s\S]{50,500}?)(?:\n##?|\n\n|$)/i,
+    /(?:^|\n)(?:Explicación|Explanation|Justificación|Justification)[:\s]*\n([\s\S]{50,500}?)(?:\n##?|\n\n|$)/i,
+  ]
+
+  for (const pattern of reasoningPatterns) {
+    const match = content.match(pattern)
+    if (match && match[1]) {
+      return match[1].trim().slice(0, 500)
+    }
   }
 
-  return data
+  const sentences = content.split(/[.!?]+\s+/).filter(s => s.trim().length > 20)
+  if (sentences.length >= 2) {
+    const summary = sentences.slice(0, 2).join('. ').trim()
+    return summary.length > 500 ? summary.slice(0, 497) + '...' : summary
+  }
+
+  return null
 }
 
 async function resolvePresetAndNotes(client, userId, requestedPresetId) {
@@ -190,181 +332,6 @@ async function updateConversationMetadata(client, conversationId, payload, prese
 
   if (error) {
     throw new Error(`No se pudo actualizar la conversación: ${error.message}`)
-  }
-}
-
-async function insertUserMessage(client, conversationId, input) {
-  const turnIndex = await getNextTurnIndex(client, conversationId)
-
-  const { data, error } = await client
-    .from('messages')
-    .insert({
-      conversation_id: conversationId,
-      role: 'user',
-      content: input,
-      turn_index: turnIndex,
-      status: 'complete',
-    })
-    .select('id, turn_index, content')
-    .single()
-
-  if (error || !data) {
-    throw new Error(`No se pudo guardar el mensaje del usuario: ${error?.message || 'Error desconocido.'}`)
-  }
-
-  return data
-}
-
-async function updateUserMessageForEdit(client, conversationId, turnIndex, content) {
-  const { data, error } = await client
-    .from('messages')
-    .update({ content, updated_at: new Date().toISOString() })
-    .eq('conversation_id', conversationId)
-    .eq('turn_index', turnIndex)
-    .eq('role', 'user')
-    .select('id, turn_index, content')
-    .single()
-
-  if (error || !data) {
-    throw new Error(`No se pudo actualizar el mensaje editado: ${error?.message || 'Error desconocido.'}`)
-  }
-
-  return data
-}
-
-async function deleteMessagesAfterTurn(client, conversationId, turnIndex) {
-  const { error } = await client
-    .from('messages')
-    .delete()
-    .eq('conversation_id', conversationId)
-    .eq('role', 'assistant')
-    .eq('turn_index', turnIndex)
-
-  if (error) {
-    throw new Error(`No se pudo limpiar la respuesta previa del turno editado: ${error.message}`)
-  }
-
-  const { error: futureError } = await client
-    .from('messages')
-    .delete()
-    .eq('conversation_id', conversationId)
-    .gt('turn_index', turnIndex)
-
-  if (futureError) {
-    throw new Error(`No se pudieron limpiar los mensajes posteriores: ${futureError.message}`)
-  }
-}
-
-async function deleteAssistantForRetry(client, conversationId, turnIndex) {
-  const { error } = await client
-    .from('messages')
-    .delete()
-    .eq('conversation_id', conversationId)
-    .eq('role', 'assistant')
-    .eq('turn_index', turnIndex)
-
-  if (error) {
-    throw new Error(`No se pudo limpiar la última respuesta del asistente: ${error.message}`)
-  }
-}
-
-async function insertAssistantMessage(client, conversationId, turnIndex, content, reasoningSummary = null) {
-  const { data, error } = await client
-    .from('messages')
-    .insert({
-      conversation_id: conversationId,
-      role: 'assistant',
-      content,
-      turn_index: turnIndex,
-      status: 'complete',
-      reasoning_summary: reasoningSummary,
-    })
-    .select('id')
-    .single()
-
-  if (error || !data) {
-    throw new Error(`No se pudo guardar el mensaje del asistente: ${error?.message || 'Error desconocido.'}`)
-  }
-
-  return data.id
-}
-
-function extractReasoningSummary(content) {
-  // Intenta extraer razonamiento del contenido
-  // Busca patrones comunes de razonamiento en respuestas de LLMs
-  
-  if (!content || content.length < 50) {
-    return null
-  }
-
-  // Buscar secciones explícitas de razonamiento
-  const reasoningPatterns = [
-    /(?:^|\n)(?:##?\s*)?(?:Razonamiento|Reasoning|Análisis|Analysis|Pensamiento|Thinking)[:\s]*\n([\s\S]{50,500}?)(?:\n##?|\n\n|$)/i,
-    /(?:^|\n)(?:Explicación|Explanation|Justificación|Justification)[:\s]*\n([\s\S]{50,500}?)(?:\n##?|\n\n|$)/i,
-  ]
-
-  for (const pattern of reasoningPatterns) {
-    const match = content.match(pattern)
-    if (match && match[1]) {
-      return match[1].trim().slice(0, 500)
-    }
-  }
-
-  // Si no hay sección explícita, extraer las primeras oraciones como contexto
-  const sentences = content.split(/[.!?]+\s+/).filter(s => s.trim().length > 20)
-  if (sentences.length >= 2) {
-    const summary = sentences.slice(0, 2).join('. ').trim()
-    return summary.length > 500 ? summary.slice(0, 497) + '...' : summary
-  }
-
-  return null
-}
-
-async function prepareOperationState(client, conversationId, payload) {
-  const mode = payload.mode || 'new'
-
-  if (mode === 'edit') {
-    if (payload.targetTurnIndex == null) {
-      throw new Error('Para editar se requiere targetTurnIndex.')
-    }
-
-    const normalizedInput = payload.input?.trim?.()
-    if (!normalizedInput) {
-      throw new Error('Para editar se requiere un input no vacío.')
-    }
-
-    await deleteMessagesAfterTurn(client, conversationId, payload.targetTurnIndex)
-    const userMessage = await updateUserMessageForEdit(client, conversationId, payload.targetTurnIndex, normalizedInput)
-    const history = await getConversationContext(client, conversationId, { beforeTurnIndex: payload.targetTurnIndex })
-
-    return {
-      history,
-      userMessage,
-      userContent: normalizedInput,
-    }
-  }
-
-  if (mode === 'retry') {
-    const latestUserMessage = await getLatestUserMessage(client, conversationId)
-    await deleteAssistantForRetry(client, conversationId, latestUserMessage.turn_index)
-    const history = await getConversationContext(client, conversationId, {
-      beforeTurnIndex: latestUserMessage.turn_index,
-    })
-
-    return {
-      history,
-      userMessage: latestUserMessage,
-      userContent: latestUserMessage.content,
-    }
-  }
-
-  const userMessage = await insertUserMessage(client, conversationId, payload.input.trim())
-  const history = await getConversationContext(client, conversationId, { beforeTurnIndex: userMessage.turn_index })
-
-  return {
-    history,
-    userMessage,
-    userContent: payload.input.trim(),
   }
 }
 
@@ -491,7 +458,7 @@ Deno.serve(async (request) => {
 
     await updateConversationMetadata(client, conversationId, payload, presetId, titleFallback)
 
-    const { history, userMessage, userContent } = await prepareOperationState(client, conversationId, payload)
+    const { history, userMessage, userContent } = await prepareOperationState(client, user.id, conversationId, payload)
     const llmMessages = [
       { role: 'system', content: systemPrompt },
       ...history,
@@ -518,15 +485,17 @@ Deno.serve(async (request) => {
           const reasoningSummary = extractReasoningSummary(safeFinalText)
           const messageId = await insertAssistantMessage(
             client,
+            user.id,
             conversationId,
             userMessage.turn_index,
             safeFinalText,
+            userMessage.id, // Pasamos el ID del mensaje de usuario como padre de la respuesta
             reasoningSummary
           )
 
           await updateConversationMetadata(client, conversationId, payload, presetId, null)
 
-          controller.enqueue(encodeSse('done', { messageId, conversationId }))
+          controller.enqueue(encodeSse('done', { messageId, conversationId, userMessageId: userMessage.id }))
           controller.close()
         } catch (error) {
           controller.enqueue(

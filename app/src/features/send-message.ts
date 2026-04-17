@@ -12,12 +12,14 @@ export type StreamChatPayload = {
   temperature: number
   presetId: string | null
   targetTurnIndex?: number
+  parentMessageId?: string | null
+  targetMessageId?: string | null
 }
 
 export type StreamChatCallbacks = {
   onConversation?: (conversationId: string) => void
   onDelta?: (text: string) => void
-  onDone?: (payload: { messageId?: string; conversationId?: string }) => void
+  onDone?: (payload: { messageId?: string; conversationId?: string; userMessageId?: string }) => void
   onError?: (message: string) => void
 }
 
@@ -64,6 +66,7 @@ function parseEventStreamChunk(chunk: string, callbacks: StreamChatCallbacks, ac
         callbacks.onDone?.({
           messageId: payload.messageId,
           conversationId: payload.conversationId,
+          userMessageId: payload.userMessageId,
         })
       }
 

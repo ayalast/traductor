@@ -25,14 +25,14 @@ export function ModelCombobox({
   const [changeError, setChangeError] = useState<string | null>(null)
 
   const filteredModels = useMemo(() => {
-    if (!searchQuery.trim()) return models
+    if (!searchQuery.trim()) return models || []
 
     const query = searchQuery.toLowerCase()
-    return models.filter(
+    return (models || []).filter(
       (model) =>
-        model.name.toLowerCase().includes(query) ||
-        model.id.toLowerCase().includes(query) ||
-        model.provider.toLowerCase().includes(query)
+        (model?.name || '').toLowerCase().includes(query) ||
+        (model?.id || '').toLowerCase().includes(query) ||
+        (model?.provider || '').toLowerCase().includes(query)
     )
   }, [models, searchQuery])
 
@@ -62,12 +62,12 @@ export function ModelCombobox({
           <h3>Catálogo del proveedor</h3>
         </div>
         {isChanging && (
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Cambiando...</span>
+          <span className="loading-tag">Cambiando...</span>
         )}
       </div>
 
       {changeError && (
-        <p style={{ margin: '0.75rem 0 0', fontSize: '0.75rem', color: 'var(--error)' }}>
+        <p className="error-text">
           {changeError}
         </p>
       )}
@@ -83,59 +83,56 @@ export function ModelCombobox({
         />
       </div>
 
-      <div
-        className="provider-grid"
-        style={{
-          maxHeight: '400px',
-          overflowY: 'auto',
-          marginTop: '0.75rem',
-        }}
-      >
+      <div className="model-grid">
         {isLoading ? (
-          <article className="provider-card">
+          <article className="provider-card loading">
             <strong>Cargando catálogo...</strong>
-            <small>Consultando provider-models</small>
           </article>
         ) : error ? (
-          <article className="provider-card">
+          <article className="provider-card error">
             <strong>Error al cargar modelos</strong>
             <small>{error}</small>
           </article>
         ) : filteredModels.length ? (
           filteredModels.map((model) => {
             const isActive = model.id === activeModel
+            const isPro = model.isFeatured || model.id.toLowerCase().includes('pro') || model.id.toLowerCase().includes('large')
+            const description = isPro ? 'Modelo de alta capacidad para tareas complejas.' : 'Modelo optimizado para velocidad y eficiencia.'
+
             return (
               <article
                 key={model.id}
-                className="provider-card"
-                style={{
-                  cursor: isActive ? 'default' : 'pointer',
-                  opacity: isChanging ? 0.6 : 1,
-                  border: isActive ? '2px solid var(--accent)' : '1px solid var(--border)',
-                }}
+                className={`provider-card${isActive ? ' provider-card--active' : ''}`}
                 onClick={() => !isChanging && handleModelChange(model.id)}
+                title={description}
               >
-                <strong>{model.name}</strong>
-                <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>{model.id}</span>
-                <small>{isActive ? '✓ Activo' : 'Click para activar'}</small>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <strong>{model.name}</strong>
+                  {isPro && <span className="featured-badge">Pro</span>}
+                </div>
+                <span className="model-id">{model.id}</span>
+                <p style={{ margin: '0.25rem 0 0', fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: '1.3' }}>
+                  {description}
+                </p>
+                <div className="model-status">
+                  {isActive ? '✓ Seleccionado' : 'Activar modelo'}
+                </div>
               </article>
             )
           })
         ) : searchQuery ? (
-          <article className="provider-card">
+          <article className="provider-card empty">
             <strong>Sin resultados</strong>
-            <small>No se encontraron modelos que coincidan con "{searchQuery}"</small>
           </article>
         ) : (
-          <article className="provider-card">
-            <strong>Sin modelos</strong>
-            <small>El backend placeholder aún no devuelve catálogo real.</small>
+          <article className="provider-card empty">
+            <strong>Sin modelos disponibles</strong>
           </article>
         )}
       </div>
 
       {filteredModels.length > 0 && (
-        <p style={{ margin: '0.75rem 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
+        <p className="results-footer">
           Mostrando {filteredModels.length} de {models.length} modelos
         </p>
       )}

@@ -20,7 +20,7 @@ import { streamChatMessage } from '../features/send-message'
 import { useAuth } from '../hooks/useAuth'
 import { useConversationBranch } from '../hooks/useConversationBranch'
 import { useConversations } from '../hooks/useConversations'
-import { useMessages } from '../hooks/useMessages'
+import { useMessages, type MessageRecord } from '../hooks/useMessages'
 import { usePromptPresets } from '../hooks/usePromptPresets'
 import { useProviderCatalog } from '../hooks/useProviderCatalog'
 import { useProviderCredentials } from '../hooks/useProviderCredentials'
@@ -35,6 +35,9 @@ type DisplayMessage = {
   content: string
   reasoning?: string
   turnIndex?: number
+  createdAt?: string
+  siblingIdx?: number
+  siblingCount?: number
 }
 
 type EditTarget = {
@@ -50,6 +53,7 @@ const fallbackMessages: DisplayMessage[] = [
     content:
       'Explícame la diferencia entre "actually", "currently" y "eventually" con ejemplos claros en español e inglés.',
     turnIndex: 1,
+    createdAt: new Date().toISOString(),
   },
   {
     id: 'm2',
@@ -60,6 +64,7 @@ const fallbackMessages: DisplayMessage[] = [
     reasoning:
       'Se separaron los términos porque suelen confundirse por parecido visual. La respuesta prioriza falsos amigos, contraste semántico y ejemplos cortos para aprendizaje rápido.',
     turnIndex: 1,
+    createdAt: new Date().toISOString(),
   },
 ]
 
@@ -69,12 +74,34 @@ function isUuidLike(value: string | null | undefined) {
 
 export function ChatPage() {
   const { user, isAuthenticated, isLoading, signOut } = useAuth()
+  
+  // 1. Estados básicos
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
+  const [isStartingNewChat, setIsStartingNewChat] = useState(true)
+  const [isSending, setIsSending] = useState(false)
+  const [inputValue, setInputValue] = useState('')
+  const [conversationSearch, setConversationSearch] = useState('')
+  const [streamError, setStreamError] = useState<string | null>(null)
+  const [optimisticMessages, setOptimisticMessages] = useState<DisplayMessage[]>([])
+  const [editTarget, setEditTarget] = useState<EditTarget | null>(null)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768)
+  const [showScrollButton, setShowScrollButton] = useState(false)
+  const [isCopiedTranscript, setIsCopiedTranscript] = useState(false)
+  const [activeSiblings, setActiveSiblings] = useState<Record<string, string>>({})
+
+  const chatThreadRef = useRef<HTMLDivElement>(null)
+  const composerRef = useRef<HTMLTextAreaElement>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
+
+  // 2. Hooks de datos
   const {
     conversations,
     isLoading: conversationsLoading,
     error: conversationsError,
     refresh: refreshConversations,
   } = useConversations(isAuthenticated)
+  
   const { presets, isLoading: presetsLoading, error: presetsError, refresh: refreshPresets } = usePromptPresets(isAuthenticated)
   const { preferences, refresh: refreshPreferences } = useUserPreferences(isAuthenticated)
 
@@ -94,56 +121,13 @@ export function ChatPage() {
     error: modelsError,
     refresh: refreshModels,
   } = useProviderCatalog(activeProvider, isAuthenticated)
+  
   const {
     credentials,
     isLoading: credentialsLoading,
     error: credentialsError,
     refresh: refreshCredentials,
   } = useProviderCredentials(isAuthenticated)
-
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
-  const [inputValue, setInputValue] = useState('')
-  const [isSending, setIsSending] = useState(false)
-  const [streamError, setStreamError] = useState<string | null>(null)
-  const [optimisticMessages, setOptimisticMessages] = useState<DisplayMessage[]>([])
-  const [editTarget, setEditTarget] = useState<EditTarget | null>(null)
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [isStartingNewChat, setIsStartingNewChat] = useState(false)
-  const abortControllerRef = useRef<AbortController | null>(null)
-
-  const handleTemperatureChange = async (temp: number) => {
-    try {
-      const { updateTemperature } = await import('../lib/api')
-      await updateTemperature(temp)
-      await refreshPreferences()
-    } catch (err) {
-      console.error('Error updating temperature:', err)
-    }
-  }
-
-  useEffect(() => {
-    if (!conversations.length) {
-      setActiveConversationId(null)
-      return
-    }
-
-    setActiveConversationId((current) => {
-      if (current && conversations.some((conversation) => conversation.id === current)) {
-        return current
-      }
-
-      if (isStartingNewChat) {
-        return null
-      }
-
-      return conversations[0].id
-    })
-  }, [conversations, isStartingNewChat])
-
-  const activeConversation = useMemo(
-    () => conversations.find((conversation) => conversation.id === activeConversationId) ?? null,
-    [activeConversationId, conversations],
-  )
 
   const {
     messages,
@@ -158,129 +142,216 @@ export function ChatPage() {
     children: childBranches,
   } = useConversationBranch(activeConversationId, isAuthenticated)
 
-  const conversationItems = conversations.length
-    ? conversations.map((conversation) => ({
+  // 3. Lógica de Branching (useMemo) - DESPUÉS de que messages esté disponible
+  const { allMessagesById, siblingsByParent } = useMemo(() => {
+    const byId: Record<string, MessageRecord> = {}
+    const byParent: Record<string, string[]> = {}
+
+    const msgList = messages || []
+    msgList.forEach((msg) => {
+      byId[msg.id] = msg
+      const pId = msg.parent_message_id || 'root'
+      if (!byParent[pId]) byParent[pId] = []
+      byParent[pId].push(msg.id)
+    })
+
+    return { allMessagesById: byId, siblingsByParent: byParent }
+  }, [messages])
+
+  const activePath = useMemo(() => {
+    const msgList = messages || []
+    if (!msgList.length) return []
+    const path: MessageRecord[] = []
+    let currentParent = 'root'
+
+    let safetyCounter = 0
+    while (siblingsByParent[currentParent] && safetyCounter < 1000) {
+      safetyCounter++
+      const options = siblingsByParent[currentParent]
+      const activeId = activeSiblings[currentParent] || options[options.length - 1]
+      const msg = allMessagesById[activeId]
+      
+      if (!msg) break
+      path.push(msg)
+      currentParent = msg.id
+    }
+
+    return path
+  }, [messages, siblingsByParent, allMessagesById, activeSiblings])
+
+  // 4. Procesamiento de conversaciones para el Sidebar
+  const filteredConversations = useMemo(() => {
+    if (!conversationSearch.trim()) return conversations
+    const query = conversationSearch.toLowerCase()
+    return conversations.filter(c => 
+      c.title.toLowerCase().includes(query) || 
+      c.provider.toLowerCase().includes(query)
+    )
+  }, [conversations, conversationSearch])
+
+  const conversationItems = useMemo(() => {
+    if (filteredConversations.length > 0) {
+      return filteredConversations.map((conversation) => ({
         id: conversation.id,
         title: conversation.title,
-        meta: `${conversation.provider} · ${new Date(conversation.updated_at).toLocaleString()}`,
+        updated_at: conversation.updated_at,
         branch:
           conversation.parent_conversation_id && conversation.branch_depth > 0
             ? `Rama nivel ${conversation.branch_depth}`
             : undefined,
         active: conversation.id === activeConversationId,
       }))
-    : [
+    }
+    
+    if (conversations.length === 0) {
+      return [
         {
           id: 'placeholder-chat',
           title: 'Traducir expresiones cotidianas',
-          meta: 'Demo local',
+          updated_at: new Date().toISOString(),
           active: true,
         },
       ]
+    }
+    
+    return []
+  }, [filteredConversations, conversations, activeConversationId])
 
+  const persistedMessages: DisplayMessage[] = useMemo(() => {
+    return activePath
+      .filter((message) => message.role === 'user' || message.role === 'assistant')
+      .map((message) => {
+        const pId = message.parent_message_id || 'root'
+        const siblings = siblingsByParent[pId] || []
+        const currentIdx = siblings.indexOf(message.id)
 
-  const providerStatus = isAuthenticated
-    ? modelsLoading
-      ? 'Cargando catálogo desde Supabase Functions'
-      : modelsError
-        ? `Sin catálogo remoto: ${modelsError}`
-        : models.length
-          ? `Modelos disponibles: ${models.length}`
-          : 'Sin modelos aún, usando catálogo vacío del backend placeholder'
-    : 'Inicia sesión para consultar tu catálogo de modelos'
+        return {
+          id: message.id,
+          role: message.role === 'assistant' ? 'assistant' : 'user',
+          author: message.role === 'assistant' ? 'Mi Traductor' : 'Tú',
+          content: message.content,
+          reasoning: message.reasoning_summary ?? undefined,
+          turnIndex: message.turn_index,
+          siblingIdx: currentIdx,
+          siblingCount: siblings.length,
+        }
+      })
+  }, [activePath, siblingsByParent])
 
-  const persistedMessages: DisplayMessage[] = messages
-    .filter((message) => message.role === 'user' || message.role === 'assistant')
-    .map((message) => ({
-      id: message.id,
-      role: message.role === 'assistant' ? 'assistant' : 'user',
-      author: message.role === 'assistant' ? 'Mi Traductor' : 'Tú',
-      content: message.content,
-      reasoning: message.reasoning_summary ?? undefined,
-      turnIndex: message.turn_index,
-    }))
+  // 5. Efectos de UI y Teclado
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!chatThreadRef.current) return
+      const { scrollTop, scrollHeight, clientHeight } = chatThreadRef.current
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
+      setShowScrollButton(!isNearBottom)
+    }
+    const el = chatThreadRef.current
+    el?.addEventListener('scroll', handleScroll)
+    return () => el?.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 768 && isSidebarOpen) {
+        setIsSidebarOpen(false)
+      } else if (window.innerWidth > 768 && !isSidebarOpen) {
+        setIsSidebarOpen(true)
+      }
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [isSidebarOpen])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        handleNewChat()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      composerRef.current?.focus()
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [activeConversationId, isStartingNewChat])
+
+  useEffect(() => {
+    if (isSending || isStartingNewChat) return
+
+    if (!conversations.length) {
+      setActiveConversationId(null)
+      return
+    }
+
+    if (!activeConversationId || !isUuidLike(activeConversationId)) {
+      setActiveConversationId(conversations[0].id)
+    }
+  }, [conversations, isStartingNewChat, isSending, activeConversationId])
 
   const activeMessages: DisplayMessage[] = isAuthenticated
-    ? [...persistedMessages, ...optimisticMessages]
+    ? optimisticMessages.length > 0
+      ? optimisticMessages
+      : persistedMessages
     : fallbackMessages
 
   const lastAssistantMessageId = [...activeMessages]
     .reverse()
     .find((message) => message.role === 'assistant')?.id
 
+  // 6. Manejadores de acciones (Handlers)
   const handleNewChat = () => {
     setActiveConversationId(null)
     setInputValue('')
     setStreamError(null)
     setOptimisticMessages([])
     setEditTarget(null)
+    setActiveSiblings({})
     setIsStartingNewChat(true)
   }
 
-  const handleSendMessage = async (mode: 'new' | 'edit' | 'retry' = 'new', targetTurnIndex?: number) => {
-    const text = inputValue.trim()
+  const handleSendMessage = async (mode: 'new' | 'edit' | 'retry' = 'new', targetTurnIndex?: number, overrideText?: string, targetMessageId?: string) => {
+    const text = overrideText !== undefined ? overrideText.trim() : inputValue.trim()
 
-    if (!isAuthenticated || isSending) {
-      return
-    }
+    if (!isAuthenticated || isSending) return
+    if ((mode === 'new' || mode === 'edit') && !text) return
 
-    if ((mode === 'new' || mode === 'edit') && !text) {
-      return
-    }
-
-    if ((mode === 'edit' || mode === 'retry') && !activeConversationId) {
-      setStreamError('Necesitas una conversación activa para editar o reintentar.')
-      return
-    }
-
+    const nextTurnIndex = targetTurnIndex ?? (Math.floor(persistedMessages.length / 2) + 1)
     const temporaryAssistantMessage: DisplayMessage = {
       id: `temp-assistant-${Date.now()}`,
       role: 'assistant',
       author: 'Mi Traductor',
       content: '',
-      turnIndex: targetTurnIndex,
+      turnIndex: nextTurnIndex,
     }
-
-    const temporaryUserMessage: DisplayMessage | null =
-      mode === 'new' || mode === 'edit'
-        ? {
-            id: `temp-user-${Date.now()}`,
-            role: 'user',
-            author: 'Tú',
-            content: text,
-            turnIndex: targetTurnIndex,
-          }
-        : null
-
-    const currentConversationId = isUuidLike(activeConversationId) ? activeConversationId : null
+    const temporaryUserMessage: DisplayMessage | null = (mode === 'new' || mode === 'edit') ? {
+      id: `temp-user-${Date.now()}`,
+      role: 'user',
+      author: 'Tú',
+      content: text,
+      turnIndex: nextTurnIndex,
+    } : null
 
     setStreamError(null)
-    setInputValue('')
+    if (overrideText === undefined) setInputValue('')
     setIsSending(true)
-    setIsStartingNewChat(false)
 
     if (mode === 'new') {
-      setOptimisticMessages([
-        ...(isAuthenticated ? persistedMessages : []),
-        ...(temporaryUserMessage ? [temporaryUserMessage] : []),
-        temporaryAssistantMessage,
-      ])
-    }
-
-    if (mode === 'edit' && targetTurnIndex != null) {
-      const baseMessages = persistedMessages.filter((message) => (message.turnIndex ?? 0) < targetTurnIndex)
-      setOptimisticMessages([
-        ...baseMessages,
-        ...(temporaryUserMessage ? [temporaryUserMessage] : []),
-        temporaryAssistantMessage,
-      ])
-    }
-
-    if (mode === 'retry' && targetTurnIndex != null) {
-      const baseMessages = persistedMessages.filter((message) => {
-        const turn = message.turnIndex ?? 0
+      setOptimisticMessages([...(isAuthenticated ? persistedMessages : []), ...(temporaryUserMessage ? [temporaryUserMessage] : []), temporaryAssistantMessage])
+    } else if (mode === 'edit' && targetTurnIndex != null) {
+      const baseMessages = persistedMessages.filter((m) => (m.turnIndex ?? 0) < targetTurnIndex)
+      setOptimisticMessages([...baseMessages, ...(temporaryUserMessage ? [temporaryUserMessage] : []), temporaryAssistantMessage])
+    } else if (mode === 'retry' && targetTurnIndex != null) {
+      const baseMessages = persistedMessages.filter((m) => {
+        const turn = m.turnIndex ?? 0
         if (turn < targetTurnIndex) return true
-        if (turn === targetTurnIndex && message.role === 'user') return true
+        const target = persistedMessages.find(msg => msg.id === targetMessageId)
+        if (turn === targetTurnIndex && m.role === 'user' && target?.role === 'assistant') return true
         return false
       })
       setOptimisticMessages([...baseMessages, temporaryAssistantMessage])
@@ -288,20 +359,20 @@ export function ChatPage() {
 
     const abortController = new AbortController()
     abortControllerRef.current = abortController
-
-    let nextConversationId: string | null = currentConversationId
+    let nextConversationId: string | null = activeConversationId
 
     try {
-      logger.info('chat', 'Iniciando envío de mensaje', {
-        mode,
-        conversationId: currentConversationId,
-        provider: activeProvider,
-        model: activeModel,
-      })
+      let parentMessageId = null
+      if (mode !== 'new') {
+        const target = allMessagesById[targetMessageId!]
+        parentMessageId = target?.parent_message_id
+      } else if (persistedMessages.length > 0) {
+        parentMessageId = persistedMessages[persistedMessages.length - 1].id
+      }
 
       await streamChatMessage(
         {
-          conversationId: currentConversationId,
+          conversationId: isUuidLike(activeConversationId) ? activeConversationId : null,
           mode,
           input: mode === 'retry' ? '' : text,
           provider: activeProvider,
@@ -309,198 +380,188 @@ export function ChatPage() {
           temperature: activeTemperature,
           presetId: activePresetId,
           targetTurnIndex,
+          parentMessageId,
+          targetMessageId,
         },
         {
-          onConversation: (conversationId) => {
+          onConversation: async (conversationId) => {
             if (isUuidLike(conversationId)) {
               nextConversationId = conversationId
               setActiveConversationId(conversationId)
+              setIsStartingNewChat(false)
+              
+              if (!activeConversationId) {
+                try {
+                  const newTitle = text.slice(0, 30).trim() + (text.length > 30 ? '...' : '')
+                  const { supabase: sb } = await import('../lib/supabase')
+                  await sb.from('conversations').update({ title: newTitle }).eq('id', conversationId)
+                  await refreshConversations()
+                } catch (e) { console.error('Auto-rename error:', e) }
+              }
             }
           },
           onDelta: (partialText) => {
             setOptimisticMessages((current) => {
               if (!current.length) return current
               const next = [...current]
-              next[next.length - 1] = {
-                ...next[next.length - 1],
-                content: partialText,
-              }
+              next[next.length - 1] = { ...next[next.length - 1], content: partialText }
               return next
             })
           },
-          onDone: ({ conversationId }) => {
-            if (conversationId && isUuidLike(conversationId)) {
-              nextConversationId = conversationId
-              setActiveConversationId(conversationId)
+          onDone: ({ messageId, conversationId: cid, userMessageId }) => {
+            if (cid && isUuidLike(cid)) setActiveConversationId(cid)
+            
+            if (messageId) {
+              setActiveSiblings(prev => {
+                const next = { ...prev }
+                const pId = parentMessageId || 'root'
+                
+                const target = targetMessageId ? allMessagesById[targetMessageId] : null
+                
+                if (mode !== 'new' && target?.role === 'assistant') {
+                  // Reintentamos asistente: el padre real es el user message (pId) y el hijo es el nuevo assistant message.
+                  next[pId] = messageId
+                } else {
+                  // Nuevo mensaje, editar, o reintentar usuario:
+                  // pId apunta al (nuevo) user message, y el user message apunta al assistant message.
+                  if (userMessageId) {
+                    next[pId] = userMessageId
+                    next[userMessageId] = messageId
+                  }
+                }
+                
+                return next
+              })
             }
           },
-          onError: (message) => {
-            setStreamError(message)
-          },
+          onError: (msg) => setStreamError(msg),
         },
         abortController.signal,
       )
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        logger.warn('chat', 'Generación detenida por el usuario')
-        setStreamError('La generación fue detenida por el usuario.')
-      } else {
-        logger.error('chat', 'Error al enviar mensaje', error)
-        setStreamError(error instanceof Error ? error.message : 'No se pudo completar el envío del mensaje.')
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        setStreamError(error instanceof Error ? error.message : 'Error al enviar mensaje.')
       }
     } finally {
       abortControllerRef.current = null
+      await refreshConversations()
+      if (nextConversationId) setActiveConversationId(nextConversationId)
+      await refreshMessages(nextConversationId)
       setIsSending(false)
       setOptimisticMessages([])
       setEditTarget(null)
-      await refreshConversations()
-
-      if (nextConversationId && nextConversationId !== activeConversationId) {
-        setActiveConversationId(nextConversationId)
-      }
-
-      await refreshMessages()
     }
-  }
-
-  const handleStopMessage = () => {
-    abortControllerRef.current?.abort()
-  }
-
-  const handleEditMessage = (messageId: string) => {
-    const target = persistedMessages.find((message) => message.id === messageId && message.role === 'user')
-
-    if (!target?.turnIndex) {
-      return
-    }
-
-    setEditTarget({
-      messageId: target.id,
-      turnIndex: target.turnIndex,
-    })
-    setInputValue(target.content)
-    setStreamError(null)
   }
 
   const handleRetryMessage = async (messageId: string) => {
-    const target = persistedMessages.find((message) => message.id === messageId && message.role === 'assistant')
-
-    if (!target?.turnIndex) {
-      return
+    const target = activeMessages.find((m) => m.id === messageId)
+    if (target && target.turnIndex !== undefined) {
+      await handleSendMessage('retry', target.turnIndex, undefined, messageId)
     }
+  }
 
-    await handleSendMessage('retry', target.turnIndex)
+  const handleSwitchSibling = (parentId: string | null, index: number) => {
+    const pId = parentId || 'root'
+    const siblings = siblingsByParent[pId]
+    if (siblings && siblings[index]) {
+      setActiveSiblings(prev => ({ ...prev, [pId]: siblings[index] }))
+    }
+  }
+
+  const handleEditMessage = (messageId: string) => {
+    const target = activeMessages.find((m) => m.id === messageId && m.role === 'user')
+    if (target && target.turnIndex !== undefined) {
+      setEditTarget({ messageId: target.id, turnIndex: target.turnIndex })
+      setInputValue(target.content)
+      setTimeout(() => composerRef.current?.focus(), 50)
+    }
   }
 
   const handleBranchMessage = async (messageId: string) => {
-    if (!activeConversationId || !activeConversation) {
-      setStreamError('Necesitas una conversación activa para crear una rama.')
-      return
-    }
-
-    const target = persistedMessages.find((message) => message.id === messageId)
-
-    if (!target?.turnIndex || !activePresetId) {
-      setStreamError('No se pudo determinar el punto exacto para crear la rama.')
-      return
-    }
+    if (!activeConversationId) return
+    const target = activeMessages.find((m) => m.id === messageId)
+    const effectivePresetId = activePresetId || presets[0]?.id
+    if (!target?.turnIndex || !effectivePresetId) return
 
     try {
-      setStreamError(null)
-      logger.info('chat', 'Creando rama de conversación', {
-        sourceConversationId: activeConversationId,
-        sourceTurnIndex: target.turnIndex,
-      })
-
       const branchId = await branchConversation({
         sourceConversationId: activeConversationId,
         sourceMessageId: target.id,
         sourceTurnIndex: target.turnIndex,
-        title: `${activeConversation.title} · rama`,
+        title: `${conversations.find(c => c.id === activeConversationId)?.title || 'Chat'} · rama`,
         provider: activeProvider,
         model: activeModel,
         temperature: activeTemperature,
-        presetId: activePresetId,
+        presetId: effectivePresetId,
       })
-
       await refreshConversations()
       setActiveConversationId(branchId)
       setIsStartingNewChat(false)
-      logger.info('chat', 'Rama creada exitosamente', { branchId })
-    } catch (error) {
-      logger.error('chat', 'Error al crear rama', error)
-      setStreamError(error instanceof Error ? error.message : 'No se pudo crear la rama.')
+    } catch (e) { setStreamError('Error al crear rama.') }
+  }
+
+  const handleShare = async () => {
+    await navigator.clipboard.writeText(window.location.href)
+    alert('¡Enlace copiado!')
+  }
+
+  const handleCopyConversation = async () => {
+    const transcript = activeMessages.map(m => `${m.role === 'user' ? 'Tú' : 'IA'}:\n${m.content}`).join('\n\n---\n\n')
+    await navigator.clipboard.writeText(transcript)
+    setIsCopiedTranscript(true)
+    setTimeout(() => setIsCopiedTranscript(false), 2000)
+  }
+
+  const handleTemperatureChange = async (temp: number) => {
+    try {
+      const { updateTemperature } = await import('../lib/api')
+      await updateTemperature(temp)
+      await refreshPreferences()
+    } catch (err) {
+      console.error('Error updating temperature:', err)
     }
   }
 
-  const handleNavigateToParent = () => {
-    if (parentBranch) {
-      setActiveConversationId(parentBranch.id)
-      setIsStartingNewChat(false)
-    }
-  }
-
-  const handleNavigateToChild = (childId: string) => {
-    setActiveConversationId(childId)
-    setIsStartingNewChat(false)
-  }
-
+  // 7. Componentes de renderizado
   const sidebar = (
     <Sidebar
       header={
         <div className="sidebar__header">
-          <div>
-            <p className="eyebrow">Mi Traductor</p>
-            <h1>Workspace conversacional</h1>
-          </div>
-          <button className="primary-btn" type="button" onClick={handleNewChat}>
-            Nuevo chat
-          </button>
+          <p className="eyebrow">Mi Traductor</p>
+          <h1>Workspace</h1>
+          <button className="primary-btn" type="button" onClick={handleNewChat}>Nuevo chat</button>
         </div>
       }
       search={
-        <div className="sidebar__search">
-          <input type="text" placeholder="Buscar conversaciones" aria-label="Buscar conversaciones" />
+        <div className="sidebar__search" style={{ position: 'relative' }}>
+          <input type="text" placeholder="Buscar..." value={conversationSearch} onChange={e => setConversationSearch(e.target.value)} />
+          {conversationSearch && <button onClick={() => setConversationSearch('')} style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer' }}>✕</button>}
         </div>
       }
       conversations={
-        conversationsLoading ? (
-          <LoadingState message="Cargando conversaciones..." size="small" />
-        ) : conversationsError ? (
-          <ErrorState
-            title="Error al cargar conversaciones"
-            message={conversationsError}
-            onRetry={() => void refreshConversations()}
-            icon="💬"
-          />
-        ) : conversationItems.length === 0 ? (
-          <EmptyState
-            icon="💬"
-            title="Sin conversaciones"
-            description="Comienza una nueva conversación para empezar a chatear"
-          />
-        ) : (
-          <ConversationList
-            conversations={conversationItems}
-            onSelectConversation={(conversationId) => {
-              setActiveConversationId(conversationId)
-              setIsStartingNewChat(false)
-            }}
-          />
-        )
+        conversationsLoading ? <LoadingState message="Cargando..." size="small" /> :
+        <ConversationList
+          conversations={conversationItems}
+          onSelectConversation={id => { setActiveConversationId(id); setIsStartingNewChat(false); }}
+          onDeleteConversation={async id => {
+            const { supabase: sb } = await import('../lib/supabase')
+            if (id === 'ALL') await sb.from('conversations').delete().eq('user_id', user?.id)
+            else await sb.from('conversations').delete().eq('id', id)
+            await refreshConversations()
+          }}
+          onRenameConversation={async (id, title) => {
+            const { supabase: sb } = await import('../lib/supabase')
+            await sb.from('conversations').update({ title }).eq('id', id)
+            await refreshConversations()
+          }}
+          searchQuery={conversationSearch}
+        />
       }
       account={
-        <div className="sidebar__account">
-          <div className="avatar">{user?.avatarFallback ?? 'G'}</div>
-          <div style={{ flex: 1 }}>
-            <strong>{user?.name ?? 'Invitado'}</strong>
-            <p>{user?.email ?? 'Inicia sesión para sincronizar'}</p>
-          </div>
-          {isAuthenticated ? (
-            <button type="button" onClick={() => void signOut()}>
-              Salir
-            </button>
-          ) : null}
+        <div className="sidebar__account" onClick={() => setIsSettingsOpen(true)} style={{ cursor: 'pointer' }}>
+          <div style={{ fontWeight: 600 }}>{user?.name || 'Usuario'}</div>
+          <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>{user?.email}</div>
+          {isAuthenticated && <button onClick={() => signOut()} style={{ marginTop: '0.5rem', width: '100%' }}>Salir</button>}
         </div>
       }
     />
@@ -509,233 +570,79 @@ export function ChatPage() {
   const header = (
     <Topbar
       title={
-        <div>
-          <p className="eyebrow">Chat activo</p>
-          <h2>{activeConversation?.title ?? conversationItems[0]?.title ?? 'Nuevo chat'}</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, justifyContent: 'center' }}>
+          <button className="sidebar-toggle-btn" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="9" y1="3" x2="9" y2="21" /></svg>
+          </button>
+          <button className="model-selector-btn" onClick={() => setIsSettingsOpen(true)}>
+            {activeProvider.toUpperCase()} · {activeModel} ▼
+          </button>
+          <button className="new-chat-mobile-btn" onClick={handleNewChat}>➕</button>
         </div>
       }
       actions={
-        <>
-          <button type="button" onClick={() => setIsSettingsOpen(true)}>
-            ⚙️ Configurar
-          </button>
-          <button type="button">Compartir luego</button>
-        </>
-      }
-      banner={
-        currentBranch && (parentBranch || childBranches.length > 0) ? (
-          <section className="branch-banner" aria-label="Contexto de rama">
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              {parentBranch ? (
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                    ↑ Padre:
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleNavigateToParent}
-                    style={{
-                      padding: '0.25rem 0.5rem',
-                      fontSize: '0.875rem',
-                      background: 'var(--surface)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {parentBranch.title}
-                  </button>
-                </div>
-              ) : null}
-              {currentBranch.branch_depth > 0 ? (
-                <span style={{ fontSize: '0.875rem', color: 'var(--accent)' }}>
-                  Nivel de rama: {currentBranch.branch_depth}
-                </span>
-              ) : null}
-              {childBranches.length > 0 ? (
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                    ↓ Ramas hijas ({childBranches.length}):
-                  </span>
-                  {childBranches.slice(0, 3).map((child) => (
-                    <button
-                      key={child.id}
-                      type="button"
-                      onClick={() => handleNavigateToChild(child.id)}
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        fontSize: '0.875rem',
-                        background: 'var(--surface)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {child.title}
-                    </button>
-                  ))}
-                  {childBranches.length > 3 ? (
-                    <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                      +{childBranches.length - 3} más
-                    </span>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          </section>
-        ) : null
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button onClick={handleCopyConversation} className="topbar-action-btn">{isCopiedTranscript ? '✅' : '📋'}</button>
+          <button onClick={handleShare} className="topbar-action-btn">🔗</button>
+          <button onClick={() => setIsSettingsOpen(true)} className="topbar-action-btn">⚙️</button>
+        </div>
       }
     />
   )
 
   const content = (
-    <>
-      {messagesLoading ? (
-        <LoadingState message="Cargando mensajes de la conversación..." />
-      ) : messagesError ? (
-        <ErrorState
-          title="Error al cargar mensajes"
-          message={messagesError}
-          onRetry={() => void refreshMessages()}
-          icon="💬"
-        />
-      ) : activeMessages.length ? (
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          {streamError ? (
-            <section className="panel-card" style={{ alignSelf: 'start' }}>
-              <p style={{ color: '#fda4af' }}>{streamError}</p>
-            </section>
-          ) : null}
-          <ChatView
-            messages={activeMessages}
-            onEditMessage={handleEditMessage}
-            onRetryMessage={(messageId) => void handleRetryMessage(messageId)}
-            onBranchMessage={(messageId) => void handleBranchMessage(messageId)}
-            getCanEdit={(message) => message.role === 'user' && !isSending}
-            getCanRetry={(message) => message.role === 'assistant' && message.id === lastAssistantMessageId && !isSending}
-            getCanBranch={(message) => !isSending && Boolean(message.id)}
-          />
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', height: '100%', minHeight: 0 }}>
+      {streamError && (
+        <div style={{ padding: '1rem', background: 'var(--bubble-user)', color: '#ef4444', borderBottom: '1px solid var(--border)', textAlign: 'center', fontSize: '0.9rem' }}>
+          <strong>Error:</strong> {streamError}
         </div>
-      ) : (
-        <EmptyState
-          icon="✍️"
-          title="Sin mensajes"
-          description="Aún no hay mensajes en esta conversación. Escribe el primero para crear o continuar el hilo."
-        />
       )}
-      <aside className="inspector">
-        {isAuthenticated ? (
-          <>
-            <ProviderSelect
-              activeProvider={activeProvider}
-              providerStatus={providerStatus}
-              onUpdate={async () => {
-                await refreshPreferences()
-              }}
-            />
-            <ModelCombobox
-              activeProvider={activeProvider}
-              activeModel={activeModel}
-              models={models}
-              isLoading={modelsLoading}
-              error={modelsError}
-              onUpdate={async () => {
-                await refreshPreferences()
-              }}
-            />
-            {credentialsLoading ? (
-              <LoadingState message="Cargando credenciales..." size="small" />
-            ) : credentialsError ? (
-              <ErrorState
-                title="Error al cargar credenciales"
-                message={credentialsError}
-                onRetry={() => void refreshCredentials()}
-                icon="🔑"
-              />
-            ) : (
-              <ProviderKeysPanel
-                credentials={credentials}
-                onRefresh={async () => {
-                  await refreshCredentials()
-                  await refreshModels()
-                }}
-              />
-            )}
-          </>
-        ) : (
-          <WelcomePanel />
-        )}
-        {presetsLoading ? (
-          <LoadingState message="Cargando presets..." size="small" />
-        ) : presetsError ? (
-          <ErrorState
-            title="Error al cargar presets"
-            message={presetsError}
-            onRetry={() => void refreshPresets()}
-            icon="📝"
-          />
-        ) : (
-          <PromptPresetList
-            presets={presets}
-            activePresetId={activePresetId}
-            onRefresh={async () => {
-              await refreshPresets()
-              await refreshPreferences()
-            }}
-          />
-        )}
-
-        <UserNotesPanel
-          initialNotes={preferences?.notes ?? ''}
-          onUpdate={async () => {
-            await refreshPreferences()
-          }}
+      {messagesLoading && !optimisticMessages.length ? <LoadingState message="Cargando..." /> :
+       activeMessages.length ? (
+        <ChatView
+          messages={activeMessages}
+          onEditMessage={handleEditMessage}
+          onRetryMessage={handleRetryMessage}
+          onBranchMessage={handleBranchMessage}
+          onSwitchSibling={(id, idx) => handleSwitchSibling(allMessagesById[id]?.parent_message_id || null, idx)}
+          getCanEdit={m => m.role === 'user' && !isSending}
+          getCanRetry={m => !isSending && (m.role === 'user' || m.id === lastAssistantMessageId)}
+          getCanBranch={m => !isSending && !!m.id}
+          containerRef={chatThreadRef}
         />
-      </aside>
-    </>
+       ) : <WelcomePanel onQuickPrompt={text => handleSendMessage('new', undefined, text)} />}
+      
+      {showScrollButton && <button className="scroll-bottom-btn" onClick={() => chatThreadRef.current && (chatThreadRef.current.scrollTop = chatThreadRef.current.scrollHeight)}>↓</button>}
+    </div>
   )
-
-  const composerPlaceholder = editTarget
-    ? 'Editando mensaje anterior. Envía para regenerar desde ese punto.'
-    : 'Escribe en inglés o español. Luego podrás guardar esta conversación, ramificarla y reutilizar su preset.'
 
   const composer = isAuthenticated ? (
     <Composer
-      placeholder={composerPlaceholder}
+      ref={composerRef}
+      placeholder={editTarget ? 'Editando...' : 'Envía un mensaje...'}
       value={inputValue}
       onChange={setInputValue}
-      onSubmit={() => void handleSendMessage(editTarget ? 'edit' : 'new', editTarget?.turnIndex)}
-      onStop={handleStopMessage}
+      onSubmit={() => handleSendMessage(editTarget ? 'edit' : 'new', editTarget?.turnIndex, undefined, editTarget?.messageId)}
+      onStop={() => abortControllerRef.current?.abort()}
       onCancelEdit={editTarget ? () => setEditTarget(null) : undefined}
       isSending={isSending}
       disabled={messagesLoading}
       isEditMode={!!editTarget}
     />
   ) : (
-    <footer className="composer">
-      <div className="composer__input">
-        <span className="eyebrow">Sincronización por cuenta</span>
-        <div className="panel-card">
-          <h3 style={{ marginBottom: '0.5rem' }}>Accede para guardar tu historial y tus presets</h3>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
-            Inicia sesión con Google para activar la persistencia real de conversaciones, API keys y presets.
-          </p>
-          {isLoading ? <p>Cargando estado de autenticación...</p> : <GoogleLoginButton disabled={false} />}
-        </div>
-      </div>
-    </footer>
+    <footer className="composer"><GoogleLoginButton /></footer>
   )
 
   return (
-    <>
-      <AppShell sidebar={sidebar} header={header} content={content} composer={composer} />
-      <SettingsDrawer
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        activeProvider={preferences?.active_provider ?? 'openrouter'}
-        activeTemperature={preferences?.active_temperature ?? 0.7}
-        onTemperatureChange={handleTemperatureChange}
-      />
-    </>
+    <div style={{ display: 'flex', width: '100%', height: '100%' }}>
+      <AppShell sidebar={sidebar} header={header} content={content} composer={composer} isSidebarOpen={isSidebarOpen} onCloseSidebar={() => setIsSidebarOpen(false)} />
+      <SettingsDrawer isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} activeProvider={activeProvider} activeTemperature={activeTemperature} onTemperatureChange={handleTemperatureChange}>
+        <ProviderSelect activeProvider={activeProvider} onUpdate={() => refreshPreferences()} />
+        <ModelCombobox activeProvider={activeProvider} activeModel={activeModel} models={models} isLoading={modelsLoading} onUpdate={() => refreshPreferences()} />
+        <ProviderKeysPanel credentials={credentials} onRefresh={() => { refreshCredentials(); refreshModels(); }} />
+        <PromptPresetList presets={presets} activePresetId={activePresetId} onRefresh={() => { refreshPresets(); refreshPreferences(); }} />
+        <UserNotesPanel initialNotes={preferences?.notes || ''} onUpdate={() => refreshPreferences()} />
+      </SettingsDrawer>
+    </div>
   )
 }

@@ -1,56 +1,53 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  color-scheme: dark;
-  
   /* Variables de textura de papel */
   --paper-opacity: 0;
   --paper-contrast: 1;
   --paper-global-opacity: 0;
   --paper-global-contrast: 1;
   
-  /* Colores base */
+  /* Fallbacks seguros (serán sobreescritos por applyTheme) */
   --bg: #0a0c14;
   --surface: #181c2e;
   --surface-elevated: #1f2437;
-  --border: rgba(241, 99, 52, 0.22);
+  --border: rgba(255, 255, 255, 0.1);
   --accent: #f16334;
-  --accent-2: #fb923c;
-  --gold: #e8c97a;
+  --accent-secondary: #fb923c;
   --text: #eef1ff;
   --text-muted: #9ba3c7;
   --text-heading: #ffd9bf;
   --text-emphasis: #e9c87f;
   
-  /* Gradientes */
-  --bubble-user: linear-gradient(135deg, #c2410c, #f16334);
-  --bubble-ai: #181c2e;
-  --logo-grad: linear-gradient(135deg, #c2410c, #fb923c);
-  --title-grad: linear-gradient(90deg, #eef1ff, #fb923c);
-  --send-grad: linear-gradient(135deg, #c2410c, #f16334);
+  /* Gradientes y efectos (dinámicos por tema) */
+  --bubble-user: var(--accent);
+  --bubble-ai: var(--surface);
+  --logo-grad: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+  --title-grad: linear-gradient(90deg, var(--text), var(--accent));
+  --send-grad: linear-gradient(135deg, var(--accent), var(--accent-secondary));
   
   /* Overlays y efectos */
-  --bg-overlay: rgba(10, 12, 20, 0.92);
-  --panel-bg: rgba(10, 12, 20, 0.98);
-  --glow-1: rgba(241, 99, 52, 0.14);
-  --glow-2: rgba(251, 146, 60, 0.10);
-  --focus-ring: rgba(241, 99, 52, 0.18);
-  --code-bg: rgba(241, 99, 52, 0.14);
-  --code-text: #ffd2aa;
+  --bg-overlay: color-mix(in srgb, var(--bg), transparent 8%);
+  --panel-bg: color-mix(in srgb, var(--bg), transparent 2%);
+  --glow-1: color-mix(in srgb, var(--accent), transparent 86%);
+  --glow-2: color-mix(in srgb, var(--accent-secondary), transparent 90%);
+  --focus-ring: color-mix(in srgb, var(--accent), transparent 82%);
+  --code-bg: color-mix(in srgb, var(--accent), transparent 86%);
+  --code-text: var(--accent-secondary);
   
   /* Sombras */
-  --logo-shadow: rgba(241, 99, 52, 0.35);
-  --bubble-shadow: rgba(0, 0, 0, 0.3);
-  --send-shadow: rgba(241, 99, 52, 0.4);
-  --send-shadow-hover: rgba(241, 99, 52, 0.55);
+  --logo-shadow: color-mix(in srgb, var(--accent), transparent 65%);
+  --bubble-shadow: rgba(0, 0, 0, 0.2);
+  --send-shadow: color-mix(in srgb, var(--accent), transparent 60%);
+  --send-shadow-hover: color-mix(in srgb, var(--accent), transparent 45%);
   --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.35);
   
   /* Scrollbar */
-  --scroll-thumb: #2a2f4a;
+  --scroll-thumb: var(--border);
   
   /* Links */
-  --link-color: #8cc8ff;
-  --link-hover: #c6e5ff;
+  --link-color: var(--accent);
+  --link-hover: var(--accent-secondary);
   
   /* Errores */
   --error-bg: rgba(220, 60, 60, 0.1);
@@ -58,13 +55,9 @@
   --error-text: #ff9e9e;
   
   /* Tipografía */
-  --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-code: 'JetBrains Mono', 'Courier New', monospace;
-  
-  /* Texturas de papel (desactivadas por defecto) */
-  --paper-opacity: 0;
-  --paper-contrast: 1;
+  --font-body: 'SNE', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'SNE', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-code: 'JetBrains Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
   
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -252,6 +245,7 @@ p {
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
+  white-space: nowrap;
   transition: transform 0.15s, box-shadow 0.15s;
   box-shadow: 0 4px 16px var(--send-shadow);
 }

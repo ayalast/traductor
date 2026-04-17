@@ -9,8 +9,8 @@ export function VersionBadge() {
     <div
       style={{
         position: 'fixed',
-        bottom: '1rem',
-        right: '1rem',
+        bottom: '6.5rem',
+        right: '2rem',
         padding: '0.5rem 0.75rem',
         background: 'var(--surface-elevated)',
         border: '1px solid var(--border)',
@@ -24,6 +24,7 @@ export function VersionBadge() {
         gap: '0.25rem',
         pointerEvents: 'none',
         userSelect: 'none',
+        opacity: 0.8,
       }}
     >
       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>

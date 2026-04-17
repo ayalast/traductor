@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createPreset, duplicatePreset, renamePreset, deletePreset, setActivePreset } from '../../lib/api'
+import { createPreset, duplicatePreset, updatePreset, deletePreset, setActivePreset } from '../../lib/api'
 import type { PromptPresetRecord } from '../../hooks/usePromptPresets'
 
 type PromptPresetListProps = {
@@ -11,13 +11,33 @@ type PromptPresetListProps = {
 export function PromptPresetList({ presets, activePresetId, onRefresh }: PromptPresetListProps) {
   const [isCreating, setIsCreating] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [newName, setNewName] = useState('')
-  const [newContent, setNewContent] = useState('')
+  const [formData, setFormData] = useState({ name: '', prompt: '' })
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleCreate = async () => {
-    if (!newName.trim() || !newContent.trim()) {
+  const handleStartCreate = () => {
+    setFormData({ name: '', prompt: '' })
+    setIsCreating(true)
+    setEditingId(null)
+    setError(null)
+  }
+
+  const handleStartEdit = (preset: PromptPresetRecord) => {
+    setFormData({ name: preset.name, prompt: preset.prompt })
+    setEditingId(preset.id)
+    setIsCreating(false)
+    setError(null)
+  }
+
+  const handleCancel = () => {
+    setIsCreating(false)
+    setEditingId(null)
+    setFormData({ name: '', prompt: '' })
+    setError(null)
+  }
+
+  const handleSave = async () => {
+    if (!formData.name.trim() || !formData.prompt.trim()) {
       setError('El nombre y contenido son requeridos')
       return
     }
@@ -26,13 +46,15 @@ export function PromptPresetList({ presets, activePresetId, onRefresh }: PromptP
     setError(null)
 
     try {
-      await createPreset(newName.trim(), newContent.trim())
+      if (isCreating) {
+        await createPreset(formData.name.trim(), formData.prompt.trim())
+      } else if (editingId) {
+        await updatePreset(editingId, formData.name.trim(), formData.prompt.trim())
+      }
       await onRefresh()
-      setIsCreating(false)
-      setNewName('')
-      setNewContent('')
+      handleCancel()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al crear preset')
+      setError(err instanceof Error ? err.message : 'Error al guardar preset')
     } finally {
       setIsSubmitting(false)
     }
@@ -43,31 +65,11 @@ export function PromptPresetList({ presets, activePresetId, onRefresh }: PromptP
     setError(null)
 
     try {
-      await duplicatePreset(preset.id, `${preset.name} (copia)`)
+      const copyName = `${preset.name} (copia)`
+      await duplicatePreset(preset.id, copyName)
       await onRefresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al duplicar preset')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleRename = async (presetId: string) => {
-    if (!newName.trim()) {
-      setError('El nombre es requerido')
-      return
-    }
-
-    setIsSubmitting(true)
-    setError(null)
-
-    try {
-      await renamePreset(presetId, newName.trim())
-      await onRefresh()
-      setEditingId(null)
-      setNewName('')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al renombrar preset')
     } finally {
       setIsSubmitting(false)
     }
@@ -110,140 +112,111 @@ export function PromptPresetList({ presets, activePresetId, onRefresh }: PromptP
       <div className="panel-card__head">
         <div>
           <p className="eyebrow">System prompts</p>
-          <h3>Presets guardados</h3>
+          <h3>Presets de traducción</h3>
         </div>
-        <button type="button" onClick={() => setIsCreating(!isCreating)} disabled={isSubmitting}>
-          {isCreating ? 'Cancelar' : 'Nuevo'}
+        <button 
+          type="button" 
+          onClick={isCreating || editingId ? handleCancel : handleStartCreate} 
+          disabled={isSubmitting}
+        >
+          {isCreating || editingId ? 'Cancelar' : 'Nuevo'}
         </button>
       </div>
 
       {error && (
-        <div style={{ padding: '0.75rem', background: 'var(--error-bg)', border: '1px solid var(--error-border)', borderRadius: '8px', marginBottom: '0.75rem' }}>
-          <p style={{ color: 'var(--error-text)', fontSize: '0.85rem' }}>{error}</p>
+        <div style={{ padding: '0.75rem', background: 'rgba(255, 0, 0, 0.1)', border: '1px solid rgba(255, 0, 0, 0.2)', borderRadius: '8px', marginBottom: '1rem' }}>
+          <p style={{ color: '#fda4af', fontSize: '0.85rem', margin: 0 }}>{error}</p>
         </div>
       )}
 
-      {isCreating && (
-        <div style={{ padding: '0.75rem', background: 'var(--surface-elevated)', border: '1px solid var(--border)', borderRadius: '10px', marginBottom: '0.75rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>Nombre</span>
+      {(isCreating || editingId) && (
+        <div style={{ padding: '1rem', background: 'var(--surface-elevated)', border: '1px solid var(--accent)', borderRadius: '12px', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <h4 style={{ margin: 0, fontSize: '0.9rem' }}>{isCreating ? 'Crear nuevo preset' : 'Editar preset'}</h4>
+          
+          <label>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem' }}>Nombre del preset</span>
             <input
               type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Mi preset personalizado"
-              style={{ width: '100%', padding: '0.5rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '0.875rem' }}
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Ej: Traductor informal"
+              style={{ width: '100%', padding: '0.65rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '0.875rem' }}
               disabled={isSubmitting}
             />
           </label>
-          <label style={{ display: 'block', marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>Contenido del prompt</span>
+
+          <label>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.35rem' }}>Instrucciones del sistema (Prompt)</span>
             <textarea
-              value={newContent}
-              onChange={(e) => setNewContent(e.target.value)}
-              placeholder="Eres un asistente útil que..."
-              rows={4}
-              style={{ width: '100%', padding: '0.5rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '0.875rem', resize: 'vertical' }}
+              value={formData.prompt}
+              onChange={(e) => setFormData({ ...formData, prompt: e.target.value })}
+              placeholder="Eres un traductor experto que..."
+              rows={6}
+              style={{ width: '100%', padding: '0.65rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '0.875rem', resize: 'vertical', lineHeight: '1.5' }}
               disabled={isSubmitting}
             />
           </label>
+
           <button
             type="button"
-            onClick={handleCreate}
+            onClick={handleSave}
             disabled={isSubmitting}
             className="primary-btn"
-            style={{ width: '100%' }}
+            style={{ width: '100%', padding: '0.75rem' }}
           >
-            {isSubmitting ? 'Creando...' : 'Crear preset'}
+            {isSubmitting ? 'Guardando...' : 'Guardar preset'}
           </button>
         </div>
       )}
 
-      <div className="preset-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      <div className="preset-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         {presets.map((preset) => (
-          <div key={preset.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {editingId === preset.id ? (
-              <div style={{ padding: '0.75rem', background: 'var(--surface-elevated)', border: '1px solid var(--accent)', borderRadius: '10px' }}>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Nuevo nombre"
-                  style={{ width: '100%', padding: '0.5rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '0.875rem', marginBottom: '0.5rem' }}
-                  disabled={isSubmitting}
-                />
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => handleRename(preset.id)}
-                    disabled={isSubmitting}
-                    style={{ flex: 1, padding: '0.5rem', background: 'var(--send-grad)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '0.8rem', cursor: 'pointer' }}
-                  >
-                    Guardar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingId(null)
-                      setNewName('')
-                    }}
-                    disabled={isSubmitting}
-                    style={{ flex: 1, padding: '0.5rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.8rem', cursor: 'pointer', color: 'var(--text)' }}
-                  >
-                    Cancelar
-                  </button>
-                </div>
+          <div key={preset.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+            <button
+              className={`preset-item${preset.id === activePresetId ? ' preset-item--active' : ''}`}
+              type="button"
+              onClick={() => handleActivate(preset.id)}
+              disabled={isSubmitting || editingId === preset.id}
+              style={{ flex: 1, textAlign: 'left', minHeight: 'auto', padding: '0.75rem' }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                <span style={{ fontWeight: 600 }}>{preset.name}</span>
+                <small style={{ fontSize: '0.7rem', opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>
+                  {preset.prompt}
+                </small>
               </div>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <button
-                  className={`preset-item${preset.id === activePresetId ? ' preset-item--active' : ''}`}
-                  type="button"
-                  onClick={() => handleActivate(preset.id)}
-                  disabled={isSubmitting}
-                  style={{ flex: 1 }}
-                >
-                  <span>{preset.name}</span>
-                  <small>{preset.is_builtin ? 'Builtin' : 'Usuario'}</small>
-                </button>
-                <div style={{ display: 'flex', gap: '0.25rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => handleDuplicate(preset)}
-                    disabled={isSubmitting}
-                    title="Duplicar"
-                    style={{ padding: '0.35rem 0.5rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer', color: 'var(--text-muted)' }}
-                  >
-                    📋
-                  </button>
-                  {!preset.is_builtin && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingId(preset.id)
-                          setNewName(preset.name)
-                        }}
-                        disabled={isSubmitting}
-                        title="Renombrar"
-                        style={{ padding: '0.35rem 0.5rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer', color: 'var(--text-muted)' }}
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(preset.id)}
-                        disabled={isSubmitting}
-                        title="Eliminar"
-                        style={{ padding: '0.35rem 0.5rem', background: 'var(--surface)', border: '1px solid var(--error-border)', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer', color: 'var(--error-text)' }}
-                      >
-                        🗑️
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
+              {preset.is_builtin && <small style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.6rem', textTransform: 'uppercase' }}>Sistema</small>}
+            </button>
+            
+            <div style={{ display: 'flex', gap: '0.25rem', paddingTop: '0.25rem' }}>
+              <button
+                type="button"
+                onClick={() => handleDuplicate(preset)}
+                disabled={isSubmitting || !!editingId}
+                title="Duplicar"
+                style={{ padding: '0.4rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer' }}
+              >
+                📋
+              </button>
+              <button
+                type="button"
+                onClick={() => handleStartEdit(preset)}
+                disabled={isSubmitting || !!editingId}
+                title="Editar"
+                style={{ padding: '0.4rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer' }}
+              >
+                ✏️
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(preset.id)}
+                disabled={isSubmitting || !!editingId}
+                title="Eliminar"
+                style={{ padding: '0.4rem', background: 'var(--surface)', border: '1px solid var(--error-border)', borderRadius: '8px', cursor: 'pointer' }}
+              >
+                🗑️
+              </button>
+            </div>
           </div>
         ))}
       </div>

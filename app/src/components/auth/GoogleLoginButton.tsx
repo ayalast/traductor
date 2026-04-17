@@ -24,10 +24,16 @@ export function GoogleLoginButton({ disabled = false }: GoogleLoginButtonProps) 
 
   return (
     <div style={{ display: 'grid', gap: '0.75rem' }}>
-      <button className="primary-btn" type="button" disabled={disabled || isSubmitting} onClick={handleClick}>
-        {isSubmitting ? 'Redirigiendo a Google...' : 'Continuar con Google'}
+      <button 
+        className="google-auth-btn" 
+        type="button" 
+        disabled={disabled || isSubmitting} 
+        onClick={handleClick}
+      >
+        <span className="google-icon">G</span>
+        <span>{isSubmitting ? 'Redirigiendo...' : 'Continuar con Google'}</span>
       </button>
-      {error ? <p style={{ color: '#fda4af' }}>{error}</p> : null}
+      {error ? <p style={{ color: '#fda4af', fontSize: '0.85rem' }}>{error}</p> : null}
     </div>
   )
 }

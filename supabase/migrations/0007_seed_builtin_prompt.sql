@@ -3,7 +3,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $$
+as $FUNC$
 declare
   builtin_preset_id uuid;
   user_email text;
@@ -60,7 +60,7 @@ begin
 
   return new;
 end;
-$$;
+$FUNC$;
 
 drop trigger if exists on_auth_user_created on auth.users;
 

@@ -10,66 +10,43 @@ export function UserNotesPanel({ initialNotes, onUpdate }: UserNotesPanelProps) 
   const [notes, setNotes] = useState(initialNotes)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const timeoutRef = useRef<number | null>(null)
+  const prevNotesRef = useRef(initialNotes)
 
-  // Sincronizar con el valor inicial cuando cambie
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNotes(e.target.value)
+  }
+
   useEffect(() => {
-    setNotes(initialNotes)
-  }, [initialNotes])
+    if (notes === prevNotesRef.current) return
 
-  const saveNotes = useCallback(
-    async (value: string) => {
+    const timer = setTimeout(async () => {
       try {
         setIsSaving(true)
         setError(null)
-        await updateUserNotes(value)
-        if (onUpdate) {
-          await onUpdate()
-        }
+        await updateUserNotes(notes)
+        prevNotesRef.current = notes
+        if (onUpdate) await onUpdate()
       } catch (err) {
-        console.error('Error saving notes:', err)
         setError(err instanceof Error ? err.message : 'Error al guardar notas')
       } finally {
         setIsSaving(false)
       }
-    },
-    [onUpdate]
-  )
+    }, 1500)
 
-  const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = event.target.value
-    setNotes(value)
-
-    // Cancelar el guardado anterior si existe
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-    }
-
-    // Guardar después de 1 segundo de inactividad
-    timeoutRef.current = setTimeout(() => {
-      saveNotes(value)
-    }, 1000)
-  }
-
-  // Limpiar timeout al desmontar
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
-    }
-  }, [])
+    return () => clearTimeout(timer)
+  }, [notes, onUpdate])
 
   return (
     <section className="panel-card">
-      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-        <h3 style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-          Notas personales
-        </h3>
+      <div className="panel-card__head">
+        <div>
+          <p className="eyebrow">Persistencia</p>
+          <h3>Notas personales</h3>
+        </div>
         {isSaving && (
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Guardando...</span>
+          <span className="loading-tag">Sincronizando...</span>
         )}
-      </header>
+      </div>
 
       <textarea
         value={notes}
@@ -77,27 +54,28 @@ export function UserNotesPanel({ initialNotes, onUpdate }: UserNotesPanelProps) 
         placeholder="Añade notas personales que se incluirán en el contexto del sistema..."
         style={{
           width: '100%',
-          minHeight: '100px',
-          padding: '0.75rem',
+          minHeight: '120px',
+          padding: '0.85rem',
           fontSize: '0.875rem',
           lineHeight: '1.5',
-          color: 'var(--text-primary)',
+          color: 'var(--text)',
           background: 'var(--surface-elevated)',
           border: '1px solid var(--border)',
-          borderRadius: '10px',
+          borderRadius: '12px',
           resize: 'vertical',
           fontFamily: 'inherit',
+          outline: 'none'
         }}
       />
 
       {error && (
-        <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: 'var(--error)' }}>
+        <p className="error-text">
           {error}
         </p>
       )}
 
-      <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-        Estas notas se añaden automáticamente al prompt del sistema en cada conversación.
+      <p style={{ margin: '0.75rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)', opacity: 0.8 }}>
+        Estas notas se inyectan automáticamente en el prompt del sistema.
       </p>
     </section>
   )

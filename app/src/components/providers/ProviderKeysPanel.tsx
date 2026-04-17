@@ -99,19 +99,29 @@ export function ProviderKeysPanel({ credentials, onRefresh }: ProviderKeysPanelP
                   }))
                 }
               />
-              <div className="message__actions">
-                <button type="button" onClick={() => void handleSave(provider.id)} disabled={isSubmitting === provider.id}>
-                  Guardar key
+              <div className="provider-card__actions">
+                <button 
+                  type="button" 
+                  onClick={() => void handleSave(provider.id)} 
+                  disabled={isSubmitting === provider.id}
+                  className="primary-btn"
+                  style={{ flex: 1, height: 'auto', padding: '0.5rem' }}
+                >
+                  {isSubmitting === provider.id ? '...' : 'Guardar'}
                 </button>
                 <button
                   type="button"
                   onClick={() => void handleValidate(provider.id)}
                   disabled={isSubmitting === provider.id || !credential?.key_hint}
                 >
-                  Validar key
+                  Validar
                 </button>
-                <button type="button" onClick={() => void handleDelete(provider.id)} disabled={isSubmitting === provider.id}>
-                  Eliminar key
+                <button 
+                  type="button" 
+                  onClick={() => void handleDelete(provider.id)} 
+                  disabled={isSubmitting === provider.id}
+                >
+                  Eliminar
                 </button>
               </div>
             </article>

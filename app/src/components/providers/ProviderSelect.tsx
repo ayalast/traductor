@@ -38,35 +38,33 @@ export function ProviderSelect({ activeProvider, providerStatus, onUpdate }: Pro
           <h3>Catálogo multi-modelo</h3>
         </div>
         {isChanging && (
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Cambiando...</span>
+          <span className="loading-tag">Cambiando...</span>
         )}
       </div>
 
       {error && (
-        <p style={{ margin: '0 0 0.75rem', fontSize: '0.75rem', color: 'var(--error)' }}>
+        <p className="error-text">
           {error}
         </p>
       )}
 
-      <div className="provider-grid">
+      <div className="model-grid">
         {PROVIDER_LIST.map((provider) => {
           const isActive = provider.id === activeProvider
           return (
             <article
               key={provider.id}
-              className="provider-card"
-              style={{
-                cursor: isActive ? 'default' : 'pointer',
-                opacity: isChanging ? 0.6 : 1,
-                border: isActive ? '2px solid var(--accent)' : '1px solid var(--border)',
-              }}
+              className={`provider-card${isActive ? ' provider-card--active' : ''}`}
               onClick={() => !isChanging && handleProviderChange(provider.id)}
             >
-              <strong>{provider.label}</strong>
-              <span>{provider.defaultModel}</span>
-              <small>
-                {isActive ? providerStatus ?? 'Activo en esta conversación' : 'Click para activar'}
-              </small>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <strong>{provider.label}</strong>
+                {isActive && <span className="featured-badge">Actual</span>}
+              </div>
+              <span className="model-id">{provider.defaultModel}</span>
+              <div className="model-status">
+                {isActive ? providerStatus || '✓ Seleccionado' : 'Activar proveedor'}
+              </div>
             </article>
           )
         })}

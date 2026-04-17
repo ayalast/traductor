@@ -11,12 +11,21 @@ export function AuthCallbackPage() {
     let isMounted = true
 
     const completeSession = async () => {
-      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(window.location.href)
-
-      if (exchangeError) {
-        if (!isMounted) return
-        setError(exchangeError.message)
-        return
+      // In @supabase/supabase-js v2, with detectSessionInUrl: true (which is default),
+      // the client automatically extracts the code and exchanges it for a session.
+      // We just need to wait for it or explicitly check if there's an error in the URL.
+      
+      const searchParams = new URLSearchParams(window.location.search)
+      const code = searchParams.get('code')
+      
+      if (code) {
+        // Only exchange if there's actually a code in the URL
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+        if (exchangeError) {
+          if (!isMounted) return
+          setError(exchangeError.message)
+          return
+        }
       }
 
       const { data, error: sessionError } = await supabase.auth.getSession()
