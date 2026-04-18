@@ -3,3 +3,4 @@ codigo_modelo/
 .env
 node_modules/
 dist/
+roo-code-settings.json
