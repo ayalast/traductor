@@ -7,6 +7,9 @@ type MessageItem = {
   author: string
   content: string
   reasoning?: string
+  turnIndex?: number
+  siblingIdx?: number
+  siblingCount?: number
 }
 
 type MessageListProps = {

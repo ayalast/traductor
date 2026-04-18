@@ -539,6 +539,45 @@ body {
   justify-content: center;
 }
 
+.composer__edit-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text);
+  width: 100%;
+  animation: fadeIn 0.2s ease;
+}
+
+.composer__edit-badge span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.composer__edit-badge button {
+  background: transparent;
+  border: 1px solid var(--text-muted);
+  color: var(--text-muted);
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.composer__edit-badge button:hover {
+  border-color: var(--text);
+  color: var(--text);
+  background: var(--surface);
+}
+
 .composer__input-wrapper {
   width: 100%;
   max-width: var(--chat-max-width);
@@ -835,8 +874,14 @@ body {
 .status-dot {
   width: 8px;
   height: 8px;
-  background: #10a37f;
+  background: var(--accent);
   border-radius: 50%;
   animation: statusPulse 2s infinite;
+}
+
+.loading-tag {
+  font-size: 0.7rem;
+  color: var(--accent);
+  font-weight: 600;
 }
 

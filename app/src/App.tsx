@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { applyTheme, applyPaperTexture, getStoredTheme, getStoredMode, getPaperTextureSettings } from './lib/themes'
-import { DiagnosticsPanel, VersionBadge } from './components/common'
+import { DiagnosticsPanel } from './components/common'
 import { logger } from './lib/logger'
 
 import './App.css'

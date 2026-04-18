@@ -27,7 +27,6 @@ type SettingsDrawerProps = {
 export function SettingsDrawer({
   isOpen,
   onClose,
-  activeProvider,
   activeTemperature,
   onTemperatureChange,
   children,

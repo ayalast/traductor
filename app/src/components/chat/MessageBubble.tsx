@@ -26,7 +26,6 @@ export function MessageBubble({
   role,
   author,
   content,
-  reasoning,
   canEdit = false,
   canRetry = false,
   canBranch = false,

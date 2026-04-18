@@ -1,5 +1,3 @@
-import React from 'react'
-
 type SiblingSwitchProps = {
   siblingIdx: number
   siblingCount: number
