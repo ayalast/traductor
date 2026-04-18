@@ -1,0 +1,5 @@
+# Ignorar codigo_modelo para que no se suba a git, pero mantenerlo localmente
+codigo_modelo/
+.env
+node_modules/
+dist/
