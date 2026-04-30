@@ -22,6 +22,7 @@ type SettingsDrawerProps = {
   activeTemperature: number
   onTemperatureChange: (temp: number) => void
   children?: ReactNode
+  dangerZone?: ReactNode
 }
 
 export function SettingsDrawer({
@@ -30,6 +31,7 @@ export function SettingsDrawer({
   activeTemperature,
   onTemperatureChange,
   children,
+  dangerZone,
 }: SettingsDrawerProps) {
   const [tempValue, setTempValue] = useState(activeTemperature)
   const [activeTheme, setActiveTheme] = useState<ThemeId>(getStoredTheme())
@@ -257,6 +259,8 @@ export function SettingsDrawer({
               </button>
             </div>
           </section>
+
+          {dangerZone}
 
           {/* Info del sistema */}
           <section className="settings-section" style={{ marginTop: 'auto', paddingTop: '2rem' }}>

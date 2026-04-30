@@ -515,6 +515,36 @@ export function ChatPage() {
     }
   }
 
+  const handleDeleteConversation = async (id: string) => {
+    const { supabase: sb } = await import('../lib/supabase')
+    if (id === 'ALL') await sb.from('conversations').delete().eq('user_id', user?.id)
+    else await sb.from('conversations').delete().eq('id', id)
+    await refreshConversations()
+  }
+
+  const handleDeleteAllConversations = async () => {
+    const confirmed = window.confirm('¿Eliminar todo el historial? Esta acción no se puede deshacer.')
+    if (!confirmed) return
+
+    await handleDeleteConversation('ALL')
+    handleNewChat()
+  }
+
+  const dangerZone = (
+    <section className="settings-section settings-danger-zone">
+      <details>
+        <summary>Opciones avanzadas</summary>
+        <div className="settings-danger-zone__content">
+          <strong>Borrar todo el historial</strong>
+          <p>Elimina permanentemente todas tus conversaciones guardadas.</p>
+          <button type="button" className="settings-danger-zone__button" onClick={handleDeleteAllConversations}>
+            Borrar todas las conversaciones
+          </button>
+        </div>
+      </details>
+    </section>
+  )
+
   // 7. Componentes de renderizado
   const sidebar = (
     <Sidebar
@@ -541,12 +571,8 @@ export function ChatPage() {
         <ConversationList
           conversations={conversationItems}
           onSelectConversation={id => { setActiveConversationId(id); setIsStartingNewChat(false); }}
-          onDeleteConversation={async id => {
-            const { supabase: sb } = await import('../lib/supabase')
-            if (id === 'ALL') await sb.from('conversations').delete().eq('user_id', user?.id)
-            else await sb.from('conversations').delete().eq('id', id)
-            await refreshConversations()
-          }}
+          onOpenConversation={id => { setActiveConversationId(id); setIsStartingNewChat(false); setIsSidebarOpen(false); }}
+          onDeleteConversation={handleDeleteConversation}
           onRenameConversation={async (id, title) => {
             const { supabase: sb } = await import('../lib/supabase')
             await sb.from('conversations').update({ title }).eq('id', id)
@@ -662,7 +688,7 @@ export function ChatPage() {
       <AppShell sidebar={sidebar} header={header} content={content} composer={composer} isSidebarOpen={isSidebarOpen} onCloseSidebar={() => setIsSidebarOpen(false)} />
       {isSettingsOpen && (
         <Suspense fallback={null}>
-          <SettingsDrawer isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} activeProvider={activeProvider} activeTemperature={activeTemperature} onTemperatureChange={handleTemperatureChange}>
+          <SettingsDrawer isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} activeProvider={activeProvider} activeTemperature={activeTemperature} onTemperatureChange={handleTemperatureChange} dangerZone={dangerZone}>
             <ProviderSelect activeProvider={activeProvider} onUpdate={() => refreshPreferences()} />
             <ModelCombobox activeProvider={activeProvider} activeModel={activeModel} models={models} isLoading={modelsLoading} error={modelsError} onUpdate={() => refreshPreferences()} />
             <ProviderKeysPanel credentials={credentials} onRefresh={() => { refreshCredentials(); refreshModels(); }} />

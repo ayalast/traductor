@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 
 type Conversation = {
   id: string
@@ -13,6 +13,7 @@ type ConversationListProps = {
   onSelectConversation?: (conversationId: string) => void
   onDeleteConversation?: (conversationId: string) => void
   onRenameConversation?: (conversationId: string, newTitle: string) => void
+  onOpenConversation?: (conversationId: string) => void
   searchQuery?: string
 }
 
@@ -21,10 +22,12 @@ export function ConversationList({
   onSelectConversation, 
   onDeleteConversation,
   onRenameConversation,
+  onOpenConversation,
   searchQuery = ''
 }: ConversationListProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
+  const lastTapRef = useRef<{ id: string; time: number }>({ id: '', time: 0 })
 
   const highlightText = (text: string, query: string) => {
     if (!query.trim()) return text
@@ -78,6 +81,18 @@ export function ConversationList({
     setEditingId(null)
   }
 
+  const handleSelectConversation = (id: string, event: React.MouseEvent) => {
+    const now = event.timeStamp
+    const isQuickSecondTap = lastTapRef.current.id === id && now - lastTapRef.current.time < 360
+
+    lastTapRef.current = { id, time: now }
+    onSelectConversation?.(id)
+
+    if (isQuickSecondTap) {
+      onOpenConversation?.(id)
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <nav className="conversation-list" aria-label="Historial de conversaciones" style={{ flex: 1 }}>
@@ -103,7 +118,7 @@ export function ConversationList({
                     <button
                       className="conversation-item"
                       type="button"
-                      onClick={() => onSelectConversation?.(conversation.id)}
+                      onClick={(event) => handleSelectConversation(conversation.id, event)}
                     >
                       <span className="conversation-item__icon">💬</span>
                       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -138,18 +153,6 @@ export function ConversationList({
         })}
       </nav>
       
-      {conversations.length > 0 && (
-        <button 
-          className="clear-conversations-btn"
-          onClick={() => {
-            if (window.confirm('¿Estás seguro de que deseas eliminar TODO el historial? Esta acción no se puede deshacer.')) {
-              onDeleteConversation?.('ALL')
-            }
-          }}
-        >
-          🗑️ Borrar todas las conversaciones
-        </button>
-      )}
     </div>
   )
 }
