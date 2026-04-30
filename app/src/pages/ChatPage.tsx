@@ -520,7 +520,12 @@ export function ChatPage() {
     <Sidebar
       header={
         <div className="sidebar__header">
-          <p className="eyebrow">Mi Traductor</p>
+          <div className="sidebar__brand-row">
+            <p className="eyebrow">Mi Traductor</p>
+            <button className="sidebar-toggle-btn" type="button" onClick={() => setIsSidebarOpen(false)} aria-label="Ocultar historial">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="9" y1="3" x2="9" y2="21" /></svg>
+            </button>
+          </div>
           <h1>Workspace</h1>
           <button className="primary-btn" type="button" onClick={handleNewChat}>Nuevo chat</button>
         </div>
@@ -573,15 +578,21 @@ export function ChatPage() {
   const header = (
     <Topbar
       title={
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, justifyContent: 'center' }}>
-          <button className="sidebar-toggle-btn" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="9" y1="3" x2="9" y2="21" /></svg>
-          </button>
+        <>
+          {!isSidebarOpen && (
+            <div className="topbar__history-slot">
+              <button className="sidebar-toggle-btn" type="button" onClick={() => setIsSidebarOpen(true)} aria-label="Mostrar historial">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="9" y1="3" x2="9" y2="21" /></svg>
+              </button>
+            </div>
+          )}
+          <div className="topbar__center-controls">
           <button className="model-selector-btn" onClick={() => setIsSettingsOpen(true)}>
             {activeProvider.toUpperCase()} · {activeModel} ▼
           </button>
           <button className="new-chat-mobile-btn" onClick={handleNewChat}>➕</button>
-        </div>
+          </div>
+        </>
       }
       actions={
         <div style={{ display: 'flex', gap: '0.5rem' }}>
