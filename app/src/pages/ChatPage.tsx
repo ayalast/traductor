@@ -98,6 +98,8 @@ export function ChatPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobileViewport())
   const [showScrollButton, setShowScrollButton] = useState(false)
   const [isCopiedTranscript, setIsCopiedTranscript] = useState(false)
+  const [isShareCopied, setIsShareCopied] = useState(false)
+  const [isConfirmingDeleteAll, setIsConfirmingDeleteAll] = useState(false)
   const [activeSiblings, setActiveSiblings] = useState<Record<string, string>>({})
 
   const chatThreadRef = useRef<HTMLDivElement>(null)
@@ -532,7 +534,8 @@ export function ChatPage() {
 
   const handleShare = async () => {
     await navigator.clipboard.writeText(window.location.href)
-    alert('¡Enlace copiado!')
+    setIsShareCopied(true)
+    setTimeout(() => setIsShareCopied(false), 2000)
   }
 
   const handleCopyConversation = async () => {
@@ -560,10 +563,13 @@ export function ChatPage() {
   }
 
   const handleDeleteAllConversations = async () => {
-    const confirmed = window.confirm('¿Eliminar todo el historial? Esta acción no se puede deshacer.')
-    if (!confirmed) return
+    if (!isConfirmingDeleteAll) {
+      setIsConfirmingDeleteAll(true)
+      return
+    }
 
     await handleDeleteConversation('ALL')
+    setIsConfirmingDeleteAll(false)
     handleNewChat()
   }
 
@@ -575,8 +581,13 @@ export function ChatPage() {
           <strong>Borrar todo el historial</strong>
           <p>Elimina permanentemente todas tus conversaciones guardadas.</p>
           <button type="button" className="settings-danger-zone__button" onClick={handleDeleteAllConversations}>
-            Borrar todas las conversaciones
+            {isConfirmingDeleteAll ? 'Confirmar borrado' : 'Borrar todas las conversaciones'}
           </button>
+          {isConfirmingDeleteAll && (
+            <button type="button" className="action-btn" onClick={() => setIsConfirmingDeleteAll(false)}>
+              Cancelar
+            </button>
+          )}
         </div>
       </details>
     </section>
@@ -666,7 +677,7 @@ export function ChatPage() {
       actions={
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button onClick={handleCopyConversation} className="topbar-action-btn">{isCopiedTranscript ? '✅' : '📋'}</button>
-          <button onClick={handleShare} className="topbar-action-btn">🔗</button>
+          <button onClick={handleShare} className="topbar-action-btn">{isShareCopied ? '✅' : '🔗'}</button>
           <button onClick={() => setIsSettingsOpen(true)} className="topbar-action-btn">⚙️</button>
         </div>
       }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { supabase } from '../lib/supabase'
 
@@ -25,9 +25,13 @@ export function useMessages(conversationId: string | null, enabled = true): UseM
   const [messages, setMessages] = useState<MessageRecord[]>([])
   const [isLoading, setIsLoading] = useState(Boolean(enabled && conversationId))
   const [error, setError] = useState<string | null>(null)
+  const requestIdRef = useRef(0)
 
   const refresh = useCallback(async (overrideId?: string | null) => {
     const targetId = overrideId !== undefined ? overrideId : conversationId
+    const requestId = requestIdRef.current + 1
+    requestIdRef.current = requestId
+
     if (!enabled || !targetId) {
       setMessages([])
       setIsLoading(false)
@@ -43,6 +47,8 @@ export function useMessages(conversationId: string | null, enabled = true): UseM
       .select('id, conversation_id, role, content, turn_index, status, reasoning_summary, created_at, parent_message_id')
       .eq('conversation_id', targetId)
       .order('created_at', { ascending: true })
+
+    if (requestId !== requestIdRef.current) return
 
     if (queryError) {
       setError(queryError.message)

@@ -1,8 +1,34 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type MouseEvent } from 'react'
 import { marked } from 'marked'
 import katex from 'katex'
 
 import { SiblingSwitch } from './SiblingSwitch'
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function sanitizeUrl(value: string | null | undefined) {
+  if (!value) return null
+
+  try {
+    const url = new URL(value, window.location.origin)
+    if (['http:', 'https:', 'mailto:', 'tel:'].includes(url.protocol)) return value
+  } catch {
+    return null
+  }
+
+  return null
+}
+
+function sanitizeLanguage(value: string | undefined) {
+  return value?.match(/[A-Za-z0-9_-]+/)?.[0] || 'text'
+}
 
 type MessageBubbleProps = {
   id: string
@@ -69,15 +95,30 @@ export function MessageBubble({
 
       // 2. Parseamos Markdown con renderer personalizado
       const renderer = new marked.Renderer()
+      renderer.html = ({ text }) => escapeHtml(text)
+      renderer.link = ({ href, title, text }) => {
+        const safeHref = sanitizeUrl(href)
+        if (!safeHref) return escapeHtml(text)
+
+        const safeTitle = title ? ` title="${escapeHtml(title)}"` : ''
+        return `<a href="${escapeHtml(safeHref)}"${safeTitle} target="_blank" rel="noreferrer">${text}</a>`
+      }
+      renderer.image = ({ href, title, text }) => {
+        const safeHref = sanitizeUrl(href)
+        if (!safeHref) return escapeHtml(text)
+
+        const safeTitle = title ? ` title="${escapeHtml(title)}"` : ''
+        return `<img src="${escapeHtml(safeHref)}" alt="${escapeHtml(text)}"${safeTitle}>`
+      }
       renderer.code = ({ text, lang }) => {
-        const language = lang || 'text'
+        const language = sanitizeLanguage(lang)
         return `
           <div class="code-block">
             <div class="code-block__header">
-              <span>${language}</span>
-              <button class="copy-code-btn" onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.innerText)">Copiar</button>
+              <span>${escapeHtml(language)}</span>
+              <button type="button" class="copy-code-btn">Copiar</button>
             </div>
-            <pre><code class="language-${language}">${text}</code></pre>
+            <pre><code class="language-${escapeHtml(language)}">${escapeHtml(text)}</code></pre>
           </div>
         `
       }
@@ -100,7 +141,7 @@ export function MessageBubble({
           const rendered = katex.renderToString(rawMath, {
             displayMode: isBlock,
             throwOnError: false,
-            trust: true,
+            trust: false,
           })
           
           const placeholder = isBlock 
@@ -120,6 +161,20 @@ export function MessageBubble({
     }
   }, [content])
 
+  const handleContentClick = async (event: MouseEvent<HTMLDivElement>) => {
+    const target = event.target
+    if (!(target instanceof HTMLElement) || !target.classList.contains('copy-code-btn')) return
+
+    const code = target.closest('.code-block')?.querySelector('code')?.textContent
+    if (!code) return
+
+    try {
+      await navigator.clipboard.writeText(code)
+    } catch (err) {
+      console.error('Error al copiar código:', err)
+    }
+  }
+
   return (
     <article className={`message-row message-row--${role} ${role === 'assistant' ? 'agent-turn' : 'user-turn'}`}>
       <div className="message-row__container">
@@ -135,6 +190,7 @@ export function MessageBubble({
           <div className="message-row__content-wrapper">
             <div 
               className="message-row__content" 
+              onClick={handleContentClick}
               dangerouslySetInnerHTML={{ __html: htmlContent }} 
             />
           </div>

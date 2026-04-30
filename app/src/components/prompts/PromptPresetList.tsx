@@ -14,6 +14,7 @@ export function PromptPresetList({ presets, activePresetId, onRefresh }: PromptP
   const [formData, setFormData] = useState({ name: '', prompt: '' })
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
 
   const handleStartCreate = () => {
     setFormData({ name: '', prompt: '' })
@@ -76,7 +77,8 @@ export function PromptPresetList({ presets, activePresetId, onRefresh }: PromptP
   }
 
   const handleDelete = async (presetId: string) => {
-    if (!confirm('¿Estás seguro de eliminar este preset?')) {
+    if (deleteTargetId !== presetId) {
+      setDeleteTargetId(presetId)
       return
     }
 
@@ -86,6 +88,7 @@ export function PromptPresetList({ presets, activePresetId, onRefresh }: PromptP
     try {
       await deletePreset(presetId)
       await onRefresh()
+      setDeleteTargetId(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al eliminar preset')
     } finally {
@@ -211,11 +214,22 @@ export function PromptPresetList({ presets, activePresetId, onRefresh }: PromptP
                 type="button"
                 onClick={() => handleDelete(preset.id)}
                 disabled={isSubmitting || !!editingId}
-                title="Eliminar"
+                title={deleteTargetId === preset.id ? 'Confirmar eliminación' : 'Eliminar'}
                 style={{ padding: '0.4rem', background: 'var(--surface)', border: '1px solid var(--error-border)', borderRadius: '8px', cursor: 'pointer' }}
               >
-                🗑️
+                {deleteTargetId === preset.id ? 'Sí' : '🗑️'}
               </button>
+              {deleteTargetId === preset.id && (
+                <button
+                  type="button"
+                  onClick={() => setDeleteTargetId(null)}
+                  disabled={isSubmitting || !!editingId}
+                  title="Cancelar eliminación"
+                  style={{ padding: '0.4rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer' }}
+                >
+                  No
+                </button>
+              )}
             </div>
           </div>
         ))}

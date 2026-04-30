@@ -43,7 +43,6 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(
             <textarea
               ref={ref}
               rows={1}
-              autoFocus
               placeholder={placeholder}
               value={value}
               disabled={disabled}

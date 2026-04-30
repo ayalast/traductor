@@ -17,6 +17,10 @@ type ConversationListProps = {
   searchQuery?: string
 }
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 export function ConversationList({ 
   conversations, 
   onSelectConversation, 
@@ -27,15 +31,18 @@ export function ConversationList({
 }: ConversationListProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const lastTapRef = useRef<{ id: string; time: number }>({ id: '', time: 0 })
 
   const highlightText = (text: string, query: string) => {
-    if (!query.trim()) return text
-    const parts = text.split(new RegExp(`(${query})`, 'gi'))
+    const trimmedQuery = query.trim()
+    if (!trimmedQuery) return text
+
+    const parts = text.split(new RegExp(`(${escapeRegExp(trimmedQuery)})`, 'gi'))
     return (
       <>
         {parts.map((part, i) => 
-          part.toLowerCase() === query.toLowerCase() 
+          part.toLowerCase() === trimmedQuery.toLowerCase() 
             ? <span key={i} className="search-highlight">{part}</span> 
             : part
         )}
@@ -63,9 +70,18 @@ export function ConversationList({
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
-    if (window.confirm('¿Eliminar esta conversación?')) {
-      onDeleteConversation?.(id)
-    }
+    setDeleteTargetId(id)
+  }
+
+  const handleConfirmDelete = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    onDeleteConversation?.(id)
+    setDeleteTargetId(null)
+  }
+
+  const handleCancelDelete = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setDeleteTargetId(null)
   }
 
   const handleStartRename = (e: React.MouseEvent, conversation: Conversation) => {
@@ -135,6 +151,29 @@ export function ConversationList({
                         <span className="conversation-item__title">{highlightText(conversation.title, searchQuery)}</span>
                       </div>
                       <div className="conversation-item__actions">
+                        {deleteTargetId === conversation.id ? (
+                          <>
+                            <button
+                              className="action-btn delete-btn"
+                              type="button"
+                              onClick={(e) => handleConfirmDelete(e, conversation.id)}
+                              title="Confirmar eliminación"
+                              aria-label="Confirmar eliminación"
+                            >
+                              Sí
+                            </button>
+                            <button
+                              className="action-btn"
+                              type="button"
+                              onClick={handleCancelDelete}
+                              title="Cancelar eliminación"
+                              aria-label="Cancelar eliminación"
+                            >
+                              No
+                            </button>
+                          </>
+                        ) : (
+                          <>
                         <button 
                           className="action-btn" 
                           type="button"
@@ -153,6 +192,8 @@ export function ConversationList({
                         >
                           🗑️
                         </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}

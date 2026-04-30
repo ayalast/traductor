@@ -37,6 +37,7 @@ export function SettingsDrawer({
   const [activeTheme, setActiveTheme] = useState<ThemeId>(getStoredTheme())
   const [activeMode, setActiveMode] = useState<ThemeMode>(getStoredMode())
   const [paperSettings, setPaperSettings] = useState(getPaperTextureSettings())
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
 
   const version = packageJson.version
   const buildDate = import.meta.env.VITE_BUILD_DATE || new Date().toISOString().split('T')[0]
@@ -252,11 +253,14 @@ export function SettingsDrawer({
               <button 
                 className="theme-card" 
                 style={{ padding: '0.75rem', width: '100%', marginBottom: 0 }}
-                onClick={() => alert('¡Gracias! Envía tus comentarios a: support@mi-traductor.ai')}
+                onClick={() => setFeedbackMessage('Gracias. Envía tus comentarios a: support@mi-traductor.ai')}
               >
                 <strong>Reportar un error</strong>
                 <p>Ayúdanos a mejorar el sistema.</p>
               </button>
+              {feedbackMessage && (
+                <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{feedbackMessage}</p>
+              )}
             </div>
           </section>
 
