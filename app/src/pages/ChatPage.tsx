@@ -71,6 +71,12 @@ function isUuidLike(value: string | null | undefined) {
   return Boolean(value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value))
 }
 
+const mobileSidebarQuery = '(max-width: 768px)'
+
+function isMobileViewport() {
+  return window.matchMedia(mobileSidebarQuery).matches
+}
+
 export function ChatPage() {
   const { user, isAuthenticated, isLoading, signOut } = useAuth()
   
@@ -84,7 +90,7 @@ export function ChatPage() {
   const [optimisticMessages, setOptimisticMessages] = useState<DisplayMessage[]>([])
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobileViewport())
   const [showScrollButton, setShowScrollButton] = useState(false)
   const [isCopiedTranscript, setIsCopiedTranscript] = useState(false)
   const [activeSiblings, setActiveSiblings] = useState<Record<string, string>>({})
@@ -241,16 +247,14 @@ export function ChatPage() {
   }, [])
 
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth <= 768 && isSidebarOpen) {
-        setIsSidebarOpen(false)
-      } else if (window.innerWidth > 768 && !isSidebarOpen) {
-        setIsSidebarOpen(true)
-      }
+    const mediaQuery = window.matchMedia(mobileSidebarQuery)
+    const handleBreakpointChange = (event: MediaQueryListEvent) => {
+      setIsSidebarOpen(!event.matches)
     }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [isSidebarOpen])
+
+    mediaQuery.addEventListener('change', handleBreakpointChange)
+    return () => mediaQuery.removeEventListener('change', handleBreakpointChange)
+  }, [])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -264,6 +268,8 @@ export function ChatPage() {
   }, [])
 
   useEffect(() => {
+    if (isMobileViewport()) return
+
     const timer = setTimeout(() => {
       composerRef.current?.focus()
     }, 150)
@@ -302,6 +308,20 @@ export function ChatPage() {
     setEditTarget(null)
     setActiveSiblings({})
     setIsStartingNewChat(true)
+  }
+
+  const handleSelectConversation = (id: string, closeSidebar = false) => {
+    if (!isUuidLike(id)) return
+
+    setActiveConversationId(id)
+    setIsStartingNewChat(false)
+    setStreamError(null)
+    setOptimisticMessages([])
+    setEditTarget(null)
+    setActiveSiblings({})
+    void refreshMessages(id)
+
+    if (closeSidebar) setIsSidebarOpen(false)
   }
 
   const handleSendMessage = async (mode: 'new' | 'edit' | 'retry' = 'new', targetTurnIndex?: number, overrideText?: string, targetMessageId?: string) => {
@@ -570,8 +590,8 @@ export function ChatPage() {
         conversationsLoading ? <LoadingState message="Cargando..." size="small" /> :
         <ConversationList
           conversations={conversationItems}
-          onSelectConversation={id => { setActiveConversationId(id); setIsStartingNewChat(false); }}
-          onOpenConversation={id => { setActiveConversationId(id); setIsStartingNewChat(false); setIsSidebarOpen(false); }}
+          onSelectConversation={id => handleSelectConversation(id)}
+          onOpenConversation={id => handleSelectConversation(id, true)}
           onDeleteConversation={handleDeleteConversation}
           onRenameConversation={async (id, title) => {
             const { supabase: sb } = await import('../lib/supabase')

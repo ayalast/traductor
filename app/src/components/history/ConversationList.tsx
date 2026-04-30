@@ -81,7 +81,7 @@ export function ConversationList({
     setEditingId(null)
   }
 
-  const handleSelectConversation = (id: string, event: React.MouseEvent) => {
+  const handleSelectConversation = (id: string, event: React.MouseEvent | React.KeyboardEvent) => {
     const now = event.timeStamp
     const isQuickSecondTap = lastTapRef.current.id === id && now - lastTapRef.current.time < 360
 
@@ -91,6 +91,14 @@ export function ConversationList({
     if (isQuickSecondTap) {
       onOpenConversation?.(id)
     }
+  }
+
+  const handleConversationKeyDown = (event: React.KeyboardEvent, id: string) => {
+    if (event.target !== event.currentTarget) return
+    if (event.key !== 'Enter' && event.key !== ' ') return
+
+    event.preventDefault()
+    handleSelectConversation(id, event)
   }
 
   return (
@@ -115,10 +123,12 @@ export function ConversationList({
                       onKeyDown={(e) => e.key === 'Enter' && handleSaveRename(conversation.id)}
                     />
                   ) : (
-                    <button
+                    <div
                       className="conversation-item"
-                      type="button"
+                      role="button"
+                      tabIndex={0}
                       onClick={(event) => handleSelectConversation(conversation.id, event)}
+                      onKeyDown={(event) => handleConversationKeyDown(event, conversation.id)}
                     >
                       <span className="conversation-item__icon">💬</span>
                       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -144,7 +154,7 @@ export function ConversationList({
                           🗑️
                         </button>
                       </div>
-                    </button>
+                    </div>
                   )}
                 </div>
               ))}
