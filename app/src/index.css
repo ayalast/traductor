@@ -13,16 +13,24 @@
   --accent: #f16334;
   --accent-secondary: #fb923c;
   --text: #eef1ff;
+  --text-secondary: #cdcdcd;
   --text-muted: #9ba3c7;
   --text-heading: #ffd9bf;
   --text-emphasis: #e9c87f;
   
   /* Gradientes y efectos (dinámicos por tema) */
   --bubble-user: var(--accent);
+  --bubble-user-text: #ececec;
   --bubble-ai: var(--surface);
   --logo-grad: linear-gradient(135deg, var(--accent), var(--accent-secondary));
   --title-grad: linear-gradient(90deg, var(--text), var(--accent));
   --send-grad: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+  --accent-text: #000000;
+  --avatar-text: #000000;
+  --primary-text: #000000;
+  --badge-bg: var(--accent);
+  --badge-border: color-mix(in srgb, var(--accent), var(--border) 45%);
+  --badge-text: var(--accent-text);
   
   /* Overlays y efectos */
   --bg-overlay: color-mix(in srgb, var(--bg), transparent 8%);
@@ -47,10 +55,29 @@
   --link-color: var(--accent);
   --link-hover: var(--accent-secondary);
   
-  /* Errores */
-  --error-bg: rgba(220, 60, 60, 0.1);
-  --error-border: rgba(220, 60, 60, 0.22);
-  --error-text: #ff9e9e;
+  /* Estados semánticos */
+  --danger-bg: rgba(239, 68, 68, 0.14);
+  --danger-bg-hover: rgba(239, 68, 68, 0.24);
+  --danger-border: rgba(248, 113, 113, 0.45);
+  --danger-text: #fecaca;
+  --danger-text-hover: #ffffff;
+  --error-bg: rgba(239, 68, 68, 0.16);
+  --error-border: rgba(248, 113, 113, 0.42);
+  --error-text: #fecaca;
+  --warning-bg: #f59e0b;
+  --warning-text: #111827;
+  --log-error-bg: rgba(248, 113, 113, 0.14);
+  --log-error-border: rgba(248, 113, 113, 0.45);
+  --log-error-text: #fca5a5;
+  --log-warn-bg: rgba(251, 191, 36, 0.14);
+  --log-warn-border: rgba(251, 191, 36, 0.45);
+  --log-warn-text: #fbbf24;
+  --log-info-bg: rgba(147, 197, 253, 0.14);
+  --log-info-border: rgba(147, 197, 253, 0.45);
+  --log-info-text: #93c5fd;
+  --log-debug-bg: rgba(203, 213, 225, 0.12);
+  --log-debug-border: rgba(203, 213, 225, 0.32);
+  --log-debug-text: #cbd5e1;
   
   /* Tipografía */
   --font-body: 'SNE', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -236,7 +263,7 @@ p {
 
 .primary-btn {
   background: var(--send-grad);
-  color: white;
+  color: var(--primary-text);
   border: none;
   border-radius: 10px;
   padding: 0.5rem 1rem;

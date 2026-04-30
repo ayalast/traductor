@@ -28,13 +28,13 @@ export function VersionBadge() {
       }}
     >
       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-        <span style={{ color: 'var(--accent)' }}>v{version}</span>
+        <span style={{ color: 'var(--link-color)' }}>v{version}</span>
         {environment === 'development' && (
           <span
             style={{
               padding: '0.125rem 0.375rem',
-              background: '#f59e0b',
-              color: 'white',
+              background: 'var(--warning-bg)',
+              color: 'var(--warning-text)',
               borderRadius: '3px',
               fontSize: '0.625rem',
               fontWeight: 600,

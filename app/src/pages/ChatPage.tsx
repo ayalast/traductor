@@ -676,7 +676,7 @@ export function ChatPage() {
   const content = (
     <div onClickCapture={handleMobileChatClick} style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', height: '100%', minHeight: 0 }}>
       {streamError && (
-        <div style={{ padding: '1rem', background: 'var(--bubble-user)', color: '#ef4444', borderBottom: '1px solid var(--border)', textAlign: 'center', fontSize: '0.9rem' }}>
+        <div style={{ padding: '1rem', background: 'var(--error-bg)', color: 'var(--error-text)', borderBottom: '1px solid var(--error-border)', textAlign: 'center', fontSize: '0.9rem' }}>
           <strong>Error:</strong> {streamError}
         </div>
       )}

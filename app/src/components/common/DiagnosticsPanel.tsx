@@ -72,30 +72,45 @@ export function DiagnosticsPanel({ isOpen, onClose }: DiagnosticsPanelProps) {
   const getLevelColor = (level: string) => {
     switch (level) {
       case 'error':
-        return '#ef4444'
+        return 'var(--log-error-text)'
       case 'warn':
-        return '#f59e0b'
+        return 'var(--log-warn-text)'
       case 'info':
-        return '#3b82f6'
+        return 'var(--log-info-text)'
       case 'debug':
-        return '#6b7280'
+        return 'var(--log-debug-text)'
       default:
-        return '#9ca3af'
+        return 'var(--text-muted)'
     }
   }
 
   const getLevelBg = (level: string) => {
     switch (level) {
       case 'error':
-        return 'rgba(239, 68, 68, 0.1)'
+        return 'var(--log-error-bg)'
       case 'warn':
-        return 'rgba(245, 158, 11, 0.1)'
+        return 'var(--log-warn-bg)'
       case 'info':
-        return 'rgba(59, 130, 246, 0.1)'
+        return 'var(--log-info-bg)'
       case 'debug':
-        return 'rgba(107, 114, 128, 0.1)'
+        return 'var(--log-debug-bg)'
       default:
-        return 'rgba(156, 163, 175, 0.1)'
+        return 'var(--surface-elevated)'
+    }
+  }
+
+  const getLevelBorder = (level: string) => {
+    switch (level) {
+      case 'error':
+        return 'var(--log-error-border)'
+      case 'warn':
+        return 'var(--log-warn-border)'
+      case 'info':
+        return 'var(--log-info-border)'
+      case 'debug':
+        return 'var(--log-debug-border)'
+      default:
+        return 'var(--border)'
     }
   }
 
@@ -213,7 +228,7 @@ export function DiagnosticsPanel({ isOpen, onClose }: DiagnosticsPanelProps) {
               border: 'none',
               borderRadius: '6px',
               fontSize: '0.875rem',
-              color: 'white',
+              color: 'var(--accent-text)',
               cursor: 'pointer',
               fontWeight: 500,
             }}
@@ -267,7 +282,7 @@ export function DiagnosticsPanel({ isOpen, onClose }: DiagnosticsPanelProps) {
                   style={{
                     padding: '0.75rem',
                     background: getLevelBg(log.level),
-                    border: `1px solid ${getLevelColor(log.level)}`,
+                    border: `1px solid ${getLevelBorder(log.level)}`,
                     borderRadius: '6px',
                     fontSize: '0.875rem',
                     fontFamily: 'monospace',
@@ -287,7 +302,7 @@ export function DiagnosticsPanel({ isOpen, onClose }: DiagnosticsPanelProps) {
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
                       {new Date(log.timestamp).toLocaleTimeString()}
                     </span>
-                    <span style={{ color: 'var(--accent)', fontSize: '0.75rem' }}>[{log.category}]</span>
+                    <span style={{ color: 'var(--link-color)', fontSize: '0.75rem' }}>[{log.category}]</span>
                   </div>
                   <div style={{ color: 'var(--text)', marginBottom: log.data || log.stack ? '0.5rem' : 0 }}>
                     {log.message}
@@ -324,7 +339,7 @@ export function DiagnosticsPanel({ isOpen, onClose }: DiagnosticsPanelProps) {
                           borderRadius: '4px',
                           overflow: 'auto',
                           fontSize: '0.75rem',
-                          color: '#ef4444',
+                          color: 'var(--error-text)',
                         }}
                       >
                         {log.stack}

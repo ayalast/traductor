@@ -223,15 +223,15 @@ export function SettingsDrawer({
             <h3 className="eyebrow">⌨️ Atajos de teclado</h3>
             <div className="settings-drawer__control-card" style={{ display: 'grid', gap: '0.75rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                <span color="var(--text-secondary)">Enviar mensaje</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Enviar mensaje</span>
                 <kbd style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border)' }}>Enter</kbd>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                <span color="var(--text-secondary)">Salto de línea</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Salto de línea</span>
                 <kbd style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border)' }}>Shift + Enter</kbd>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                <span color="var(--text-secondary)">Cancelar edición</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Cancelar edición</span>
                 <kbd style={{ background: 'var(--surface)', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--border)' }}>Esc</kbd>
               </div>
             </div>
@@ -267,7 +267,7 @@ export function SettingsDrawer({
             <div style={{ padding: '1rem', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface-elevated)', textAlign: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <span className="status-dot"></span>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent)' }}>Sistema Sincronizado</span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--link-color)' }}>Sistema Sincronizado</span>
               </div>
               <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 600, color: 'var(--text)' }}>Mi Traductor v{version}</p>
               <p style={{ margin: '0.25rem 0 0', fontSize: '0.7rem', color: 'var(--text-muted)' }}>Build: {buildDate}</p>

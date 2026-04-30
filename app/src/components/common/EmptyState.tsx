@@ -62,20 +62,20 @@ export function EmptyState({ icon = '📭', title, description, action }: EmptyS
             background: 'var(--accent)',
             border: 'none',
             borderRadius: '10px',
-            color: 'white',
+            color: 'var(--accent-text)',
             fontSize: '0.875rem',
             fontWeight: 500,
             cursor: 'pointer',
             transition: 'all 0.2s',
-            boxShadow: '0 4px 12px rgba(241, 99, 52, 0.3)',
+            boxShadow: '0 4px 12px var(--send-shadow)',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px)'
-            e.currentTarget.style.boxShadow = '0 6px 16px rgba(241, 99, 52, 0.4)'
+            e.currentTarget.style.boxShadow = '0 6px 16px var(--send-shadow-hover)'
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'translateY(0)'
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(241, 99, 52, 0.3)'
+            e.currentTarget.style.boxShadow = '0 4px 12px var(--send-shadow)'
           }}
         >
           {action.label}

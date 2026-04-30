@@ -57,7 +57,7 @@ export function AuthCallbackPage() {
       <div style={{ maxWidth: '30rem', textAlign: 'center' }}>
         <h1 style={{ marginBottom: '0.75rem' }}>Conectando tu sesión</h1>
         {error ? (
-          <p style={{ color: '#fda4af' }}>{error}</p>
+          <p style={{ color: 'var(--error-text)' }}>{error}</p>
         ) : (
           <p>Estamos completando el acceso con Google y preparando tu espacio sincronizado.</p>
         )}

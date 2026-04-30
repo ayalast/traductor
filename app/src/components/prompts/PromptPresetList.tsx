@@ -124,8 +124,8 @@ export function PromptPresetList({ presets, activePresetId, onRefresh }: PromptP
       </div>
 
       {error && (
-        <div style={{ padding: '0.75rem', background: 'rgba(255, 0, 0, 0.1)', border: '1px solid rgba(255, 0, 0, 0.2)', borderRadius: '8px', marginBottom: '1rem' }}>
-          <p style={{ color: '#fda4af', fontSize: '0.85rem', margin: 0 }}>{error}</p>
+        <div style={{ padding: '0.75rem', background: 'var(--error-bg)', border: '1px solid var(--error-border)', borderRadius: '8px', marginBottom: '1rem' }}>
+          <p style={{ color: 'var(--error-text)', fontSize: '0.85rem', margin: 0 }}>{error}</p>
         </div>
       )}
 
@@ -185,7 +185,7 @@ export function PromptPresetList({ presets, activePresetId, onRefresh }: PromptP
                   {preset.prompt}
                 </small>
               </div>
-              {preset.is_builtin && <small style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.6rem', textTransform: 'uppercase' }}>Sistema</small>}
+              {preset.is_builtin && <small style={{ background: 'var(--badge-bg)', border: '1px solid var(--badge-border)', color: 'var(--badge-text)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.6rem', textTransform: 'uppercase' }}>Sistema</small>}
             </button>
             
             <div style={{ display: 'flex', gap: '0.25rem', paddingTop: '0.25rem' }}>

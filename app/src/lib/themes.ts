@@ -13,13 +13,129 @@ export type Theme = {
   }
 }
 
+const DARK_SEMANTIC_DEFAULTS: ThemeVars = {
+  '--danger-bg': 'rgba(239, 68, 68, 0.14)',
+  '--danger-bg-hover': 'rgba(239, 68, 68, 0.24)',
+  '--danger-border': 'rgba(248, 113, 113, 0.45)',
+  '--danger-text': '#fecaca',
+  '--danger-text-hover': '#ffffff',
+  '--error-bg': 'rgba(239, 68, 68, 0.16)',
+  '--error-border': 'rgba(248, 113, 113, 0.42)',
+  '--error-text': '#fecaca',
+  '--warning-bg': '#f59e0b',
+  '--warning-text': '#111827',
+  '--log-error-bg': 'rgba(248, 113, 113, 0.14)',
+  '--log-error-border': 'rgba(248, 113, 113, 0.45)',
+  '--log-error-text': '#fca5a5',
+  '--log-warn-bg': 'rgba(251, 191, 36, 0.14)',
+  '--log-warn-border': 'rgba(251, 191, 36, 0.45)',
+  '--log-warn-text': '#fbbf24',
+  '--log-info-bg': 'rgba(147, 197, 253, 0.14)',
+  '--log-info-border': 'rgba(147, 197, 253, 0.45)',
+  '--log-info-text': '#93c5fd',
+  '--log-debug-bg': 'rgba(203, 213, 225, 0.12)',
+  '--log-debug-border': 'rgba(203, 213, 225, 0.32)',
+  '--log-debug-text': '#cbd5e1',
+}
+
+const LIGHT_SEMANTIC_DEFAULTS: ThemeVars = {
+  '--danger-bg': 'rgba(220, 38, 38, 0.08)',
+  '--danger-bg-hover': 'rgba(220, 38, 38, 0.14)',
+  '--danger-border': 'rgba(185, 28, 28, 0.35)',
+  '--danger-text': '#991b1b',
+  '--danger-text-hover': '#7f1d1d',
+  '--error-bg': 'rgba(220, 38, 38, 0.08)',
+  '--error-border': 'rgba(185, 28, 28, 0.35)',
+  '--error-text': '#b91c1c',
+  '--warning-bg': '#f59e0b',
+  '--warning-text': '#111827',
+  '--log-error-bg': 'rgba(220, 38, 38, 0.08)',
+  '--log-error-border': 'rgba(185, 28, 28, 0.35)',
+  '--log-error-text': '#b91c1c',
+  '--log-warn-bg': 'rgba(217, 119, 6, 0.10)',
+  '--log-warn-border': 'rgba(146, 64, 14, 0.35)',
+  '--log-warn-text': '#92400e',
+  '--log-info-bg': 'rgba(37, 99, 235, 0.08)',
+  '--log-info-border': 'rgba(29, 78, 216, 0.32)',
+  '--log-info-text': '#1d4ed8',
+  '--log-debug-bg': 'rgba(71, 85, 105, 0.08)',
+  '--log-debug-border': 'rgba(71, 85, 105, 0.28)',
+  '--log-debug-text': '#475569',
+}
+
+function hexToRgb(hex: string) {
+  const value = hex.replace('#', '')
+  if (value.length !== 6) return null
+
+  return {
+    r: parseInt(value.slice(0, 2), 16),
+    g: parseInt(value.slice(2, 4), 16),
+    b: parseInt(value.slice(4, 6), 16),
+  }
+}
+
+function channelToLinear(value: number) {
+  const channel = value / 255
+  return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+}
+
+function relativeLuminance(hex: string) {
+  const rgb = hexToRgb(hex)
+  if (!rgb) return null
+
+  return 0.2126 * channelToLinear(rgb.r) + 0.7152 * channelToLinear(rgb.g) + 0.0722 * channelToLinear(rgb.b)
+}
+
+function contrastRatio(colorA: string, colorB: string) {
+  const luminanceA = relativeLuminance(colorA)
+  const luminanceB = relativeLuminance(colorB)
+  if (luminanceA == null || luminanceB == null) return 0
+
+  const lighter = Math.max(luminanceA, luminanceB)
+  const darker = Math.min(luminanceA, luminanceB)
+  return (lighter + 0.05) / (darker + 0.05)
+}
+
+function getHexColors(value: string) {
+  return value.match(/#[0-9a-f]{6}/gi) ?? []
+}
+
+function pickReadableText(value: string, fallback: string) {
+  const colors = getHexColors(value)
+  if (!colors.length) return fallback
+
+  const whiteMinContrast = Math.min(...colors.map((color) => contrastRatio('#ffffff', color)))
+  const blackMinContrast = Math.min(...colors.map((color) => contrastRatio('#000000', color)))
+  return blackMinContrast > whiteMinContrast ? '#000000' : '#ffffff'
+}
+
+function withThemeDefaults(mode: ThemeMode, vars: ThemeVars): ThemeVars {
+  const defaults = mode === 'dark' ? DARK_SEMANTIC_DEFAULTS : LIGHT_SEMANTIC_DEFAULTS
+  const merged = { ...defaults, ...vars }
+  const fallbackText = mode === 'dark' ? '#ffffff' : '#000000'
+  const fallbackLink = mode === 'dark' ? merged['--accent'] : merged['--text-emphasis']
+  const fallbackLinkHover = mode === 'dark' ? merged['--accent-secondary'] : merged['--text-heading']
+
+  return {
+    ...merged,
+    '--accent-text': vars['--accent-text'] ?? pickReadableText(merged['--accent'], fallbackText),
+    '--primary-text': vars['--primary-text'] ?? pickReadableText(merged['--send-grad'] || merged['--accent'], fallbackText),
+    '--avatar-text': vars['--avatar-text'] ?? pickReadableText(merged['--logo-grad'] || merged['--accent'], fallbackText),
+    '--badge-bg': vars['--badge-bg'] ?? 'var(--accent)',
+    '--badge-border': vars['--badge-border'] ?? 'color-mix(in srgb, var(--accent), var(--border) 45%)',
+    '--badge-text': vars['--badge-text'] ?? 'var(--accent-text)',
+    '--link-color': vars['--link-color'] ?? fallbackLink,
+    '--link-hover': vars['--link-hover'] ?? fallbackLinkHover,
+  }
+}
+
 export const THEMES: Record<ThemeId, Theme> = {
   libre: {
     label: 'Libre (ChatGPT)',
     description: 'Estilo minimalista inspirado en ChatGPT y LibreChat.',
     modes: {
       dark: {
-        vars: {
+        vars: withThemeDefaults('dark', {
           '--bg': '#0d0d0d',
           '--surface': '#171717',
           '--surface-elevated': '#212121',
@@ -40,10 +156,10 @@ export const THEMES: Record<ThemeId, Theme> = {
           '--send-shadow-hover': 'rgba(0, 0, 0, 0.4)',
           '--glow-1': 'rgba(16, 163, 127, 0.05)',
           '--glow-2': 'rgba(0, 0, 0, 0)',
-        },
+        }),
       },
       light: {
-        vars: {
+        vars: withThemeDefaults('light', {
           '--bg': '#ffffff',
           '--surface': '#f7f7f8',
           '--surface-elevated': '#ececf1',
@@ -58,13 +174,13 @@ export const THEMES: Record<ThemeId, Theme> = {
           '--bubble-user': '#fbfbfb',
           '--bubble-user-text': '#171717',
           '--send-grad': '#10a37f',
-          '--logo-grad': 'linear-gradient(135deg, #10a37f, #126e6b)',
+          '--logo-grad': 'linear-gradient(135deg, #10a37f, #34d399)',
           '--title-grad': 'linear-gradient(90deg, #171717, #10a37f)',
           '--send-shadow': 'rgba(16, 163, 127, 0.15)',
           '--send-shadow-hover': 'rgba(16, 163, 127, 0.25)',
           '--glow-1': 'rgba(16, 163, 127, 0.03)',
           '--glow-2': 'rgba(0, 0, 0, 0)',
-        },
+        }),
       },
     },
   },
@@ -73,7 +189,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     description: 'Cálido y cinematográfico, con naranjas suaves y profundidad de cobre.',
     modes: {
       dark: {
-        vars: {
+        vars: withThemeDefaults('dark', {
           '--bg': '#0a0c14',
           '--surface': '#0f1219',
           '--surface-elevated': '#181c2e',
@@ -82,22 +198,22 @@ export const THEMES: Record<ThemeId, Theme> = {
           '--accent-secondary': '#fb923c',
           '--text': '#eef1ff',
           '--text-secondary': '#9ba3c7',
-          '--text-muted': '#6b7280',
+          '--text-muted': '#9ca3af',
           '--text-heading': '#ffd9bf',
           '--text-emphasis': '#e9c87f',
           '--bubble-user': '#1a1412',
           '--bubble-user-text': '#eef1ff',
-          '--send-grad': 'linear-gradient(135deg, #c2410c, #f16334)',
-          '--logo-grad': 'linear-gradient(135deg, #c2410c, #fb923c)',
+          '--send-grad': 'linear-gradient(135deg, #9a3412, #c2410c)',
+          '--logo-grad': 'linear-gradient(135deg, #9a3412, #c2410c)',
           '--title-grad': 'linear-gradient(90deg, #eef1ff, #fb923c)',
           '--send-shadow': 'rgba(241, 99, 52, 0.4)',
           '--send-shadow-hover': 'rgba(241, 99, 52, 0.55)',
           '--glow-1': 'rgba(241, 99, 52, 0.14)',
           '--glow-2': 'rgba(251, 146, 60, 0.10)',
-        },
+        }),
       },
       light: {
-        vars: {
+        vars: withThemeDefaults('light', {
           '--bg': '#fff8f1',
           '--surface': '#ffffff',
           '--surface-elevated': '#fffcf7',
@@ -106,7 +222,7 @@ export const THEMES: Record<ThemeId, Theme> = {
           '--accent-secondary': '#f6ad55',
           '--text': '#2d1b12',
           '--text-secondary': '#7b5e4b',
-          '--text-muted': '#9ca3af',
+          '--text-muted': '#6b5b4c',
           '--text-heading': '#7b341e',
           '--text-emphasis': '#9c4221',
           '--bubble-user': '#fff5eb',
@@ -118,7 +234,7 @@ export const THEMES: Record<ThemeId, Theme> = {
           '--send-shadow-hover': 'rgba(221, 107, 32, 0.4)',
           '--glow-1': 'rgba(221, 107, 32, 0.08)',
           '--glow-2': 'rgba(246, 173, 85, 0.06)',
-        },
+        }),
       },
     },
   },
@@ -127,7 +243,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     description: 'Limpio y técnico, con azules fríos y gran legibilidad.',
     modes: {
       dark: {
-        vars: {
+        vars: withThemeDefaults('dark', {
           '--bg': '#060d17',
           '--surface': '#0b1624',
           '--surface-elevated': '#122236',
@@ -136,22 +252,22 @@ export const THEMES: Record<ThemeId, Theme> = {
           '--accent-secondary': '#7dd3fc',
           '--text': '#e6f4ff',
           '--text-secondary': '#94a9c9',
-          '--text-muted': '#64748b',
+          '--text-muted': '#94a3b8',
           '--text-heading': '#bae6fd',
           '--text-emphasis': '#7dd3fc',
           '--bubble-user': '#0d131a',
           '--bubble-user-text': '#e6f4ff',
-          '--send-grad': 'linear-gradient(135deg, #0369a1, #0ea5e9)',
+          '--send-grad': 'linear-gradient(135deg, #075985, #0369a1)',
           '--logo-grad': 'linear-gradient(135deg, #0ea5e9, #7dd3fc)',
           '--title-grad': 'linear-gradient(90deg, #e6f4ff, #38bdf8)',
           '--send-shadow': 'rgba(14, 165, 233, 0.4)',
           '--send-shadow-hover': 'rgba(14, 165, 233, 0.55)',
           '--glow-1': 'rgba(14, 165, 233, 0.12)',
           '--glow-2': 'rgba(125, 211, 252, 0.08)',
-        },
+        }),
       },
       light: {
-        vars: {
+        vars: withThemeDefaults('light', {
           '--bg': '#f0f9ff',
           '--surface': '#ffffff',
           '--surface-elevated': '#f8fcff',
@@ -172,7 +288,7 @@ export const THEMES: Record<ThemeId, Theme> = {
           '--send-shadow-hover': 'rgba(2, 132, 199, 0.35)',
           '--glow-1': 'rgba(2, 132, 199, 0.06)',
           '--glow-2': 'rgba(56, 189, 248, 0.05)',
-        },
+        }),
       },
     },
   },
@@ -181,7 +297,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     description: 'Verde sereno con contraste natural y un tono más orgánico.',
     modes: {
       dark: {
-        vars: {
+        vars: withThemeDefaults('dark', {
           '--bg': '#060f0a',
           '--surface': '#0c1a12',
           '--surface-elevated': '#152b1b',
@@ -190,22 +306,22 @@ export const THEMES: Record<ThemeId, Theme> = {
           '--accent-secondary': '#86efac',
           '--text': '#edfdf2',
           '--text-secondary': '#94a3b8',
-          '--text-muted': '#475569',
+          '--text-muted': '#9bb5a3',
           '--text-heading': '#dcfce7',
           '--text-emphasis': '#86efac',
           '--bubble-user': '#0d1a14',
           '--bubble-user-text': '#edfdf2',
-          '--send-grad': 'linear-gradient(135deg, #15803d, #22c55e)',
+          '--send-grad': 'linear-gradient(135deg, #166534, #15803d)',
           '--logo-grad': 'linear-gradient(135deg, #22c55e, #86efac)',
           '--title-grad': 'linear-gradient(90deg, #edfdf2, #4ade80)',
           '--send-shadow': 'rgba(34, 197, 94, 0.3)',
           '--send-shadow-hover': 'rgba(34, 197, 94, 0.45)',
           '--glow-1': 'rgba(34, 197, 94, 0.1)',
           '--glow-2': 'rgba(134, 239, 172, 0.06)',
-        },
+        }),
       },
       light: {
-        vars: {
+        vars: withThemeDefaults('light', {
           '--bg': '#f0fdf4',
           '--surface': '#ffffff',
           '--surface-elevated': '#f7fee7',
@@ -226,7 +342,7 @@ export const THEMES: Record<ThemeId, Theme> = {
           '--send-shadow-hover': 'rgba(22, 163, 74, 0.25)',
           '--glow-1': 'rgba(22, 163, 74, 0.05)',
           '--glow-2': 'rgba(74, 222, 128, 0.04)',
-        },
+        }),
       },
     },
   },
@@ -235,7 +351,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     description: 'Suave y editorial, con violetas apagados y mejor separación visual.',
     modes: {
       dark: {
-        vars: {
+        vars: withThemeDefaults('dark', {
           '--bg': '#0f0a1a',
           '--surface': '#161026',
           '--surface-elevated': '#221a36',
@@ -244,22 +360,22 @@ export const THEMES: Record<ThemeId, Theme> = {
           '--accent-secondary': '#c4b5fd',
           '--text': '#f3efff',
           '--text-secondary': '#b6a8d6',
-          '--text-muted': '#6b7280',
+          '--text-muted': '#9ca3af',
           '--text-heading': '#ede9fe',
           '--text-emphasis': '#c4b5fd',
           '--bubble-user': '#14111a',
           '--bubble-user-text': '#f3efff',
-          '--send-grad': 'linear-gradient(135deg, #6d28d9, #8b5cf6)',
+          '--send-grad': 'linear-gradient(135deg, #6d28d9, #7c3aed)',
           '--logo-grad': 'linear-gradient(135deg, #8b5cf6, #c4b5fd)',
           '--title-grad': 'linear-gradient(90deg, #f3efff, #a78bfa)',
           '--send-shadow': 'rgba(139, 92, 246, 0.35)',
           '--send-shadow-hover': 'rgba(139, 92, 246, 0.5)',
           '--glow-1': 'rgba(139, 92, 246, 0.12)',
           '--glow-2': 'rgba(196, 181, 253, 0.08)',
-        },
+        }),
       },
       light: {
-        vars: {
+        vars: withThemeDefaults('light', {
           '--bg': '#f5f3ff',
           '--surface': '#ffffff',
           '--surface-elevated': '#fdfcff',
@@ -273,14 +389,14 @@ export const THEMES: Record<ThemeId, Theme> = {
           '--text-emphasis': '#5b21b6',
           '--bubble-user': '#f5f3ff',
           '--bubble-user-text': '#2e1065',
-          '--send-grad': 'linear-gradient(135deg, #7c3aed, #8b5cf6)',
-          '--logo-grad': 'linear-gradient(135deg, #7c3aed, #a78bfa)',
+          '--send-grad': 'linear-gradient(135deg, #6d28d9, #7c3aed)',
+          '--logo-grad': 'linear-gradient(135deg, #6d28d9, #7c3aed)',
           '--title-grad': 'linear-gradient(90deg, #2e1065, #7c3aed)',
           '--send-shadow': 'rgba(124, 58, 237, 0.18)',
           '--send-shadow-hover': 'rgba(124, 58, 237, 0.3)',
           '--glow-1': 'rgba(124, 58, 237, 0.06)',
           '--glow-2': 'rgba(167, 139, 250, 0.05)',
-        },
+        }),
       },
     },
   },
@@ -289,7 +405,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     description: 'Táctil y clásico, con tonos crema y contraste elegante.',
     modes: {
       dark: {
-        vars: {
+        vars: withThemeDefaults('dark', {
           '--bg': '#141210',
           '--surface': '#1c1917',
           '--surface-elevated': '#292522',
@@ -298,22 +414,22 @@ export const THEMES: Record<ThemeId, Theme> = {
           '--accent-secondary': '#e9c87f',
           '--text': '#f4eee3',
           '--text-secondary': '#b8aa96',
-          '--text-muted': '#78716c',
+          '--text-muted': '#a8a29e',
           '--text-heading': '#fafaf9',
           '--text-emphasis': '#e9c87f',
           '--bubble-user': '#1a1816',
           '--bubble-user-text': '#f4eee3',
           '--send-grad': 'linear-gradient(135deg, #854d0e, #a16207)',
-          '--logo-grad': 'linear-gradient(135deg, #a16207, #e9c87f)',
+          '--logo-grad': 'linear-gradient(135deg, #b7791f, #e9c87f)',
           '--title-grad': 'linear-gradient(90deg, #f4eee3, #d4af37)',
           '--send-shadow': 'rgba(161, 98, 7, 0.3)',
           '--send-shadow-hover': 'rgba(161, 98, 7, 0.45)',
           '--glow-1': 'rgba(161, 98, 7, 0.1)',
           '--glow-2': 'rgba(233, 200, 127, 0.06)',
-        },
+        }),
       },
       light: {
-        vars: {
+        vars: withThemeDefaults('light', {
           '--bg': '#fcfaf2',
           '--surface': '#ffffff',
           '--surface-elevated': '#fffdf5',
@@ -327,14 +443,14 @@ export const THEMES: Record<ThemeId, Theme> = {
           '--text-emphasis': '#78350f',
           '--bubble-user': '#fdfbf7',
           '--bubble-user-text': '#422006',
-          '--send-grad': 'linear-gradient(135deg, #a16207, #ca8a04)',
-          '--logo-grad': 'linear-gradient(135deg, #a16207, #d4af37)',
+          '--send-grad': 'linear-gradient(135deg, #b7791f, #ca8a04)',
+          '--logo-grad': 'linear-gradient(135deg, #b7791f, #d4af37)',
           '--title-grad': 'linear-gradient(90deg, #422006, #a16207)',
           '--send-shadow': 'rgba(161, 98, 7, 0.15)',
           '--send-shadow-hover': 'rgba(161, 98, 7, 0.25)',
           '--glow-1': 'rgba(161, 98, 7, 0.05)',
           '--glow-2': 'rgba(212, 175, 55, 0.04)',
-        },
+        }),
       },
     },
   },
@@ -343,7 +459,7 @@ export const THEMES: Record<ThemeId, Theme> = {
     description: 'Nitidez extrema para máxima accesibilidad.',
     modes: {
       dark: {
-        vars: {
+        vars: withThemeDefaults('dark', {
           '--bg': '#000000',
           '--surface': '#111111',
           '--surface-elevated': '#222222',
@@ -357,17 +473,17 @@ export const THEMES: Record<ThemeId, Theme> = {
           '--text-emphasis': '#ffffff',
           '--bubble-user': '#333333',
           '--bubble-user-text': '#ffffff',
-          '--send-grad': 'linear-gradient(135deg, #555555, #777755)',
-          '--logo-grad': 'linear-gradient(135deg, #333333, #ffffff)',
+          '--send-grad': '#ffffff',
+          '--logo-grad': '#ffffff',
           '--title-grad': 'linear-gradient(90deg, #ffffff, #ffffff)',
           '--send-shadow': 'rgba(255, 255, 255, 0.1)',
           '--send-shadow-hover': 'rgba(255, 255, 255, 0.2)',
           '--glow-1': 'rgba(255, 255, 255, 0.05)',
           '--glow-2': 'rgba(255, 255, 255, 0.05)',
-        },
+        }),
       },
       light: {
-        vars: {
+        vars: withThemeDefaults('light', {
           '--bg': '#ffffff',
           '--surface': '#f9f9f9',
           '--surface-elevated': '#eeeeee',
@@ -388,7 +504,7 @@ export const THEMES: Record<ThemeId, Theme> = {
           '--send-shadow-hover': 'rgba(0, 0, 0, 0.2)',
           '--glow-1': 'rgba(0, 0, 0, 0.05)',
           '--glow-2': 'rgba(0, 0, 0, 0.05)',
-        },
+        }),
       },
     },
   },
@@ -397,16 +513,25 @@ export const THEMES: Record<ThemeId, Theme> = {
 export const DEFAULT_THEME: ThemeId = 'libre'
 export const DEFAULT_MODE: ThemeMode = 'dark'
 
-export function applyTheme(themeId: ThemeId, mode: ThemeMode) {
-  const theme = THEMES[themeId]
-  if (!theme) return
+function isThemeId(value: string | null): value is ThemeId {
+  return Boolean(value && value in THEMES)
+}
 
-  const vars = theme.modes[mode].vars
+function isThemeMode(value: string | null): value is ThemeMode {
+  return value === 'dark' || value === 'light'
+}
+
+export function applyTheme(themeId: ThemeId, mode: ThemeMode) {
+  const normalizedThemeId = isThemeId(themeId) ? themeId : DEFAULT_THEME
+  const normalizedMode = isThemeMode(mode) ? mode : DEFAULT_MODE
+  const theme = THEMES[normalizedThemeId]
+
+  const vars = theme.modes[normalizedMode].vars
   const root = document.documentElement
 
   // Aplicamos color-scheme nativo
-  root.style.colorScheme = mode
-  root.setAttribute('data-theme-mode', mode)
+  root.style.colorScheme = normalizedMode
+  root.setAttribute('data-theme-mode', normalizedMode)
 
   Object.entries(vars).forEach(([key, value]) => {
     root.style.setProperty(key, value)
@@ -415,12 +540,12 @@ export function applyTheme(themeId: ThemeId, mode: ThemeMode) {
 
 export function getStoredTheme(): ThemeId {
   const stored = localStorage.getItem('ui_theme')
-  return (stored as ThemeId) || DEFAULT_THEME
+  return isThemeId(stored) ? stored : DEFAULT_THEME
 }
 
 export function getStoredMode(): ThemeMode {
   const stored = localStorage.getItem('ui_theme_mode')
-  return (stored as ThemeMode) || DEFAULT_MODE
+  return isThemeMode(stored) ? stored : DEFAULT_MODE
 }
 
 export function setStoredTheme(themeId: ThemeId) {
