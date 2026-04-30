@@ -3,4 +3,6 @@ codigo_modelo/
 .env
 node_modules/
 dist/
+.vite/
+app/.vite/
 roo-code-settings.json

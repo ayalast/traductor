@@ -85,8 +85,8 @@ export function MessageList({
               canEdit={getCanEdit?.(message) ?? false}
               canRetry={getCanRetry?.(message) ?? false}
               canBranch={getCanBranch?.(message) ?? false}
-              siblingIdx={(message as any).siblingIdx}
-              siblingCount={(message as any).siblingCount}
+              siblingIdx={message.siblingIdx}
+              siblingCount={message.siblingCount}
               onEdit={onEditMessage}
               onRetry={onRetryMessage}
               onBranch={onBranchMessage}

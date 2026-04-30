@@ -135,6 +135,14 @@ body {
   padding: 0 0.5rem;
 }
 
+.sidebar__conversations {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .conversation-group__label {
   padding: 1.25rem 0.5rem 0.5rem;
   font-size: 0.7rem;
@@ -182,8 +190,86 @@ body {
 }
 
 .sidebar__account {
+  display: grid;
+  gap: 0.55rem;
+  flex-shrink: 0;
   padding: 0.75rem;
   border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface), var(--bg) 12%);
+}
+
+.account-card {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.account-card:hover {
+  border-color: color-mix(in srgb, var(--accent), var(--border) 45%);
+  background: var(--surface-elevated);
+}
+
+.account-card__avatar {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--logo-grad);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.account-card__identity {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.account-card__identity strong,
+.account-card__identity small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-card__identity strong {
+  font-size: 0.82rem;
+}
+
+.account-card__identity small {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+.account-card__settings {
+  opacity: 0.8;
+}
+
+.account-signout {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid color-mix(in srgb, #ef4444, var(--border) 45%);
+  border-radius: 10px;
+  background: color-mix(in srgb, #ef4444, transparent 88%);
+  color: #fecaca;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.account-signout:hover {
+  background: color-mix(in srgb, #ef4444, transparent 78%);
+  color: #fff;
 }
 
 /* ========================================

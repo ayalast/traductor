@@ -86,8 +86,8 @@ export function MessageBubble({
 
       // 3. Restauramos y renderizamos con KaTeX
       mathBlocks.forEach((original, index) => {
-        const isBlock = original.startsWith('\\\[') || original.startsWith('$$')
-        const isSlashDelimited = original.startsWith('\\\[') || original.startsWith('\\\(')
+        const isBlock = original.startsWith('\\[') || original.startsWith('$$')
+        const isSlashDelimited = original.startsWith('\\[') || original.startsWith('\\(')
         
         let rawMath = original
         if (isSlashDelimited) {

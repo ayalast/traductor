@@ -167,7 +167,7 @@ supabase/
 - [ ] Validar responsive en dispositivos reales
 - [ ] Desplegar frontend y backend con secretos reales
 
-Consulta la guía principal en [`plans/plan-maestro-release.md`](plans/plan-maestro-release.md:1), el checklist operativo en [`plans/release-checklist.md`](plans/release-checklist.md:1) y la auditoría en [`VERIFICATION_CHECKLIST.md`](VERIFICATION_CHECKLIST.md:1).
+Consulta la guía principal en [`plans/plan-maestro-release.md`](plans/plan-maestro-release.md:1), el checklist operativo en [`plans/release-checklist.md`](plans/release-checklist.md:1), el plan de performance en [`plans/optimizacion-carga-inicial.md`](plans/optimizacion-carga-inicial.md:1) y la auditoría en [`VERIFICATION_CHECKLIST.md`](VERIFICATION_CHECKLIST.md:1).
 
 ## Despliegue
 
@@ -217,6 +217,7 @@ Si alguno de esos pasos falla, el release no debe considerarse cerrado.
 Para problemas o preguntas, revisa:
 - [`plans/plan-maestro-release.md`](plans/plan-maestro-release.md:1) - Guía principal vigente
 - [`plans/release-checklist.md`](plans/release-checklist.md:1) - Checklist operativo de release
+- [`plans/optimizacion-carga-inicial.md`](plans/optimizacion-carga-inicial.md:1) - Plan vigente para optimizar carga inicial
 - [`VERIFICATION_CHECKLIST.md`](VERIFICATION_CHECKLIST.md:1) - Auditoría técnica y validación
 - [`HANDOFF_PROYECTO.md`](HANDOFF_PROYECTO.md) - Contexto histórico del proyecto original
 

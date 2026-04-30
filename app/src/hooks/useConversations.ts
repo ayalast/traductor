@@ -45,6 +45,7 @@ export function useConversations(enabled = true): UseConversationsResult {
       )
       .eq('archived', false)
       .order('updated_at', { ascending: false })
+      .limit(50)
 
     if (queryError) {
       setError(queryError.message)

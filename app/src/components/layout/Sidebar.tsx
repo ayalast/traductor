@@ -12,7 +12,9 @@ export function Sidebar({ header, search, conversations, account }: SidebarProps
     <aside className="sidebar">
       {header}
       {search}
-      {conversations}
+      <div className="sidebar__conversations">
+        {conversations}
+      </div>
       {account}
     </aside>
   )

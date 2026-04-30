@@ -2,14 +2,12 @@
 
 ## Estado de este documento
 
-Este documento pasa a ser la referencia principal desde este punto del proyecto.
+Este documento es la referencia principal de release y despliegue.
 
-Su objetivo es unificar y simplificar lo que antes estaba repartido entre documentos ahora archivados o complementarios:
+Su objetivo es unificar y simplificar lo que antes estaba repartido entre documentos ya eliminados o complementarios.
 
-- [`plans/rework-completo-app-plan.md`](plans/rework-completo-app-plan.md) — archivado
-- [`plans/rework-completo-app-spec.md`](plans/rework-completo-app-spec.md) — archivado
-- [`plans/deploy-readiness-roadmap.md`](plans/deploy-readiness-roadmap.md) — archivado
-- [`plans/release-checklist.md`](plans/release-checklist.md) — complemento operativo vigente
+- [`plans/release-checklist.md`](release-checklist.md) — complemento operativo vigente
+- [`plans/optimizacion-carga-inicial.md`](optimizacion-carga-inicial.md) — plan vigente de performance inicial
 - [`VERIFICATION_CHECKLIST.md`](VERIFICATION_CHECKLIST.md) — auditoría técnica vigente
 
 ## Resumen ejecutivo
@@ -22,7 +20,7 @@ Estado actual confirmado:
 - backend y datos en [`supabase/`](supabase)
 - [`build`](app/package.json:8) pasa
 - [`lint`](app/package.json:9) pasa
-- versión visible actual: [`0.1.0-audit.2`](app/package.json:4)
+- versión visible actual: [`0.9.0-rc.1`](app/package.json:4)
 - checklist técnico consolidado en [`VERIFICATION_CHECKLIST.md`](VERIFICATION_CHECKLIST.md)
 
 La aplicación ya no está en fase de construcción estructural.
@@ -231,7 +229,7 @@ Mientras el preview no esté validado, **no se promueve a `main`**.
 
 ### Fase 4. Preparación de release candidate
 
-1. cambiar versión visible desde [`0.1.0-audit.2`](app/package.json:4) a una RC
+1. confirmar versión visible RC en [`app/package.json`](app/package.json:4)
 2. actualizar [`README.md`](README.md)
 3. revisar [`plans/release-checklist.md`](plans/release-checklist.md)
 4. aceptar explícitamente o abrir tarea sobre warning de chunk grande

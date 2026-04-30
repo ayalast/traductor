@@ -12,6 +12,15 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
       },
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('@supabase')) return 'supabase'
+            if (id.includes('marked') || id.includes('katex')) return 'markdown'
+            if (id.includes('react')) return 'react'
+          }
+        },
+      },
     },
   },
 })

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { applyTheme, applyPaperTexture, getStoredTheme, getStoredMode, getPaperTextureSettings } from './lib/themes'
-import { DiagnosticsPanel } from './components/common'
 import { logger } from './lib/logger'
+
+const DiagnosticsPanel = lazy(() => import('./components/common/DiagnosticsPanel').then(m => ({ default: m.DiagnosticsPanel })))
 
 import './App.css'
 
@@ -43,7 +44,11 @@ export default function App() {
   return (
     <>
       <Outlet />
-      <DiagnosticsPanel isOpen={isDiagnosticsOpen} onClose={() => setIsDiagnosticsOpen(false)} />
+      {isDiagnosticsOpen && (
+        <Suspense fallback={null}>
+          <DiagnosticsPanel isOpen={isDiagnosticsOpen} onClose={() => setIsDiagnosticsOpen(false)} />
+        </Suspense>
+      )}
     </>
   )
 }

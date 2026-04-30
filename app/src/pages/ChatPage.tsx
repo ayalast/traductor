@@ -1,24 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { logger } from '../lib/logger'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 
 import { GoogleLoginButton } from '../components/auth/GoogleLoginButton'
-import { SettingsDrawer } from '../components/layout/SettingsDrawer'
-import { ChatView } from '../components/chat/ChatView'
 import { Composer } from '../components/chat/Composer'
 import { WelcomePanel } from '../components/chat/WelcomePanel'
 import { ConversationList } from '../components/history/ConversationList'
 import { AppShell } from '../components/layout/AppShell'
 import { Sidebar } from '../components/layout/Sidebar'
 import { Topbar } from '../components/layout/Topbar'
-import { PromptPresetList } from '../components/prompts/PromptPresetList'
-import { UserNotesPanel } from '../components/prompts/UserNotesPanel'
-import { ModelCombobox } from '../components/providers/ModelCombobox'
-import { ProviderKeysPanel } from '../components/providers/ProviderKeysPanel'
-import { ProviderSelect } from '../components/providers/ProviderSelect'
 import { branchConversation } from '../features/branch-conversation'
 import { streamChatMessage } from '../features/send-message'
 import { useAuth } from '../hooks/useAuth'
-import { useConversationBranch } from '../hooks/useConversationBranch'
 import { useConversations } from '../hooks/useConversations'
 import { useMessages, type MessageRecord } from '../hooks/useMessages'
 import { usePromptPresets } from '../hooks/usePromptPresets'
@@ -26,7 +17,15 @@ import { useProviderCatalog } from '../hooks/useProviderCatalog'
 import { useProviderCredentials } from '../hooks/useProviderCredentials'
 import { useUserPreferences } from '../hooks/useUserPreferences'
 import { PROVIDERS } from '../lib/providers'
-import { LoadingState, ErrorState, EmptyState } from '../components/common'
+import { LoadingState } from '../components/common'
+
+const SettingsDrawer = lazy(() => import('../components/layout/SettingsDrawer').then(m => ({ default: m.SettingsDrawer })))
+const ChatView = lazy(() => import('../components/chat/ChatView').then(m => ({ default: m.ChatView })))
+const ProviderSelect = lazy(() => import('../components/providers/ProviderSelect').then(m => ({ default: m.ProviderSelect })))
+const ModelCombobox = lazy(() => import('../components/providers/ModelCombobox').then(m => ({ default: m.ModelCombobox })))
+const ProviderKeysPanel = lazy(() => import('../components/providers/ProviderKeysPanel').then(m => ({ default: m.ProviderKeysPanel })))
+const PromptPresetList = lazy(() => import('../components/prompts/PromptPresetList').then(m => ({ default: m.PromptPresetList })))
+const UserNotesPanel = lazy(() => import('../components/prompts/UserNotesPanel').then(m => ({ default: m.UserNotesPanel })))
 
 type DisplayMessage = {
   id: string
@@ -98,11 +97,10 @@ export function ChatPage() {
   const {
     conversations,
     isLoading: conversationsLoading,
-    error: conversationsError,
     refresh: refreshConversations,
   } = useConversations(isAuthenticated)
   
-  const { presets, isLoading: presetsLoading, error: presetsError, refresh: refreshPresets } = usePromptPresets(isAuthenticated)
+  const { presets, refresh: refreshPresets } = usePromptPresets(isAuthenticated && isSettingsOpen)
   const { preferences, refresh: refreshPreferences } = useUserPreferences(isAuthenticated)
 
   const activeProvider = preferences?.active_provider ?? 'groq'
@@ -120,27 +118,18 @@ export function ChatPage() {
     isLoading: modelsLoading,
     error: modelsError,
     refresh: refreshModels,
-  } = useProviderCatalog(activeProvider, isAuthenticated)
+  } = useProviderCatalog(activeProvider, isAuthenticated && isSettingsOpen)
   
   const {
     credentials,
-    isLoading: credentialsLoading,
-    error: credentialsError,
     refresh: refreshCredentials,
-  } = useProviderCredentials(isAuthenticated)
+  } = useProviderCredentials(isAuthenticated && isSettingsOpen)
 
   const {
     messages,
     isLoading: messagesLoading,
-    error: messagesError,
     refresh: refreshMessages,
   } = useMessages(activeConversationId, isAuthenticated)
-
-  const {
-    current: currentBranch,
-    parent: parentBranch,
-    children: childBranches,
-  } = useConversationBranch(activeConversationId, isAuthenticated)
 
   // 3. Lógica de Branching (useMemo) - DESPUÉS de que messages esté disponible
   const { allMessagesById, siblingsByParent } = useMemo(() => {
@@ -481,7 +470,11 @@ export function ChatPage() {
     if (!activeConversationId) return
     const target = activeMessages.find((m) => m.id === messageId)
     const effectivePresetId = activePresetId || presets[0]?.id
-    if (!target?.turnIndex || !effectivePresetId) return
+    if (!target?.turnIndex) return
+    if (!effectivePresetId) {
+      setStreamError('Selecciona un preset activo antes de crear una rama.')
+      return
+    }
 
     try {
       const branchId = await branchConversation({
@@ -497,7 +490,7 @@ export function ChatPage() {
       await refreshConversations()
       setActiveConversationId(branchId)
       setIsStartingNewChat(false)
-    } catch (e) { setStreamError('Error al crear rama.') }
+    } catch { setStreamError('Error al crear rama.') }
   }
 
   const handleShare = async () => {
@@ -558,10 +551,20 @@ export function ChatPage() {
         />
       }
       account={
-        <div className="sidebar__account" onClick={() => setIsSettingsOpen(true)} style={{ cursor: 'pointer' }}>
-          <div style={{ fontWeight: 600 }}>{user?.name || 'Usuario'}</div>
-          <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>{user?.email}</div>
-          {isAuthenticated && <button onClick={() => signOut()} style={{ marginTop: '0.5rem', width: '100%' }}>Salir</button>}
+        <div className="sidebar__account">
+          <button className="account-card" type="button" onClick={() => setIsSettingsOpen(true)}>
+            <span className="account-card__avatar">{user?.avatarFallback || 'U'}</span>
+            <span className="account-card__identity">
+              <strong>{user?.name || 'Usuario'}</strong>
+              <small>{user?.email}</small>
+            </span>
+            <span className="account-card__settings" aria-hidden="true">⚙️</span>
+          </button>
+          {isAuthenticated && (
+            <button className="account-signout" type="button" onClick={() => signOut()}>
+              Salir
+            </button>
+          )}
         </div>
       }
     />
@@ -599,17 +602,19 @@ export function ChatPage() {
       )}
       {messagesLoading && !optimisticMessages.length ? <LoadingState message="Cargando..." /> :
        activeMessages.length ? (
-        <ChatView
-          messages={activeMessages}
-          onEditMessage={handleEditMessage}
-          onRetryMessage={handleRetryMessage}
-          onBranchMessage={handleBranchMessage}
-          onSwitchSibling={(id, idx) => handleSwitchSibling(allMessagesById[id]?.parent_message_id || null, idx)}
-          getCanEdit={m => m.role === 'user' && !isSending}
-          getCanRetry={m => !isSending && (m.role === 'user' || m.id === lastAssistantMessageId)}
-          getCanBranch={m => !isSending && !!m.id}
-          containerRef={chatThreadRef}
-        />
+        <Suspense fallback={<LoadingState message="Preparando conversación..." />}>
+          <ChatView
+            messages={activeMessages}
+            onEditMessage={handleEditMessage}
+            onRetryMessage={handleRetryMessage}
+            onBranchMessage={handleBranchMessage}
+            onSwitchSibling={(id, idx) => handleSwitchSibling(allMessagesById[id]?.parent_message_id || null, idx)}
+            getCanEdit={m => m.role === 'user' && !isSending}
+            getCanRetry={m => !isSending && (m.role === 'user' || m.id === lastAssistantMessageId)}
+            getCanBranch={m => !isSending && !!m.id}
+            containerRef={chatThreadRef}
+          />
+        </Suspense>
        ) : <WelcomePanel onQuickPrompt={text => handleSendMessage('new', undefined, text)} />}
       
       {showScrollButton && <button className="scroll-bottom-btn" onClick={() => chatThreadRef.current && (chatThreadRef.current.scrollTop = chatThreadRef.current.scrollHeight)}>↓</button>}
@@ -633,16 +638,28 @@ export function ChatPage() {
     <footer className="composer"><GoogleLoginButton /></footer>
   )
 
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+        <LoadingState message="Preparando tu espacio..." size="large" />
+      </div>
+    )
+  }
+
   return (
     <div style={{ display: 'flex', width: '100%', height: '100%' }}>
       <AppShell sidebar={sidebar} header={header} content={content} composer={composer} isSidebarOpen={isSidebarOpen} onCloseSidebar={() => setIsSidebarOpen(false)} />
-      <SettingsDrawer isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} activeProvider={activeProvider} activeTemperature={activeTemperature} onTemperatureChange={handleTemperatureChange}>
-        <ProviderSelect activeProvider={activeProvider} onUpdate={() => refreshPreferences()} />
-        <ModelCombobox activeProvider={activeProvider} activeModel={activeModel} models={models} isLoading={modelsLoading} onUpdate={() => refreshPreferences()} />
-        <ProviderKeysPanel credentials={credentials} onRefresh={() => { refreshCredentials(); refreshModels(); }} />
-        <PromptPresetList presets={presets} activePresetId={activePresetId} onRefresh={() => { refreshPresets(); refreshPreferences(); }} />
-        <UserNotesPanel initialNotes={preferences?.notes || ''} onUpdate={() => refreshPreferences()} />
-      </SettingsDrawer>
+      {isSettingsOpen && (
+        <Suspense fallback={null}>
+          <SettingsDrawer isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} activeProvider={activeProvider} activeTemperature={activeTemperature} onTemperatureChange={handleTemperatureChange}>
+            <ProviderSelect activeProvider={activeProvider} onUpdate={() => refreshPreferences()} />
+            <ModelCombobox activeProvider={activeProvider} activeModel={activeModel} models={models} isLoading={modelsLoading} error={modelsError} onUpdate={() => refreshPreferences()} />
+            <ProviderKeysPanel credentials={credentials} onRefresh={() => { refreshCredentials(); refreshModels(); }} />
+            <PromptPresetList presets={presets} activePresetId={activePresetId} onRefresh={async () => { await refreshPresets(); await refreshPreferences(); }} />
+            <UserNotesPanel initialNotes={preferences?.notes || ''} onUpdate={() => refreshPreferences()} />
+          </SettingsDrawer>
+        </Suspense>
+      )}
     </div>
   )
 }
