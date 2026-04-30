@@ -14,6 +14,7 @@ export type StreamChatPayload = {
   targetTurnIndex?: number
   parentMessageId?: string | null
   targetMessageId?: string | null
+  clientHistory?: Array<{ role: 'user' | 'assistant'; content: string }>
 }
 
 export type StreamChatCallbacks = {
@@ -21,6 +22,11 @@ export type StreamChatCallbacks = {
   onDelta?: (text: string) => void
   onDone?: (payload: { messageId?: string; conversationId?: string; userMessageId?: string }) => void
   onError?: (message: string) => void
+}
+
+export type PrewarmChatPayload = {
+  provider: ProviderId
+  presetId: string | null
 }
 
 function getFunctionsBaseUrl() {
@@ -85,12 +91,19 @@ export async function streamChatMessage(
   payload: StreamChatPayload,
   callbacks: StreamChatCallbacks,
   signal?: AbortSignal,
+  accessToken?: string,
 ) {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  let token = accessToken
 
-  if (!session?.access_token) {
+  if (!token) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    token = session?.access_token
+  }
+
+  if (!token) {
     throw new Error('No hay una sesión activa para enviar mensajes al backend.')
   }
 
@@ -98,7 +111,7 @@ export async function streamChatMessage(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.access_token}`,
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
     signal,
@@ -135,4 +148,38 @@ export async function streamChatMessage(
   }
 
   return accumulatedText
+}
+
+export async function prewarmChatStream(
+  payload: PrewarmChatPayload,
+  accessToken?: string,
+  signal?: AbortSignal,
+) {
+  let token = accessToken
+
+  if (!token) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    token = session?.access_token
+  }
+
+  if (!token) return
+
+  await fetch(`${getFunctionsBaseUrl()}/chat-stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      intent: 'prewarm',
+      provider: payload.provider,
+      presetId: payload.presetId,
+    }),
+    signal,
+  }).catch(() => {
+    // Prewarm is best-effort; message sending still handles real errors.
+  })
 }

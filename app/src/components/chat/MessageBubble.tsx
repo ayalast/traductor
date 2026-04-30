@@ -36,6 +36,7 @@ type MessageBubbleProps = {
   author: string
   content: string
   reasoning?: string
+  isStreaming?: boolean
   canEdit?: boolean
   canRetry?: boolean
   canBranch?: boolean
@@ -52,6 +53,7 @@ export function MessageBubble({
   role,
   author,
   content,
+  isStreaming = false,
   canEdit = false,
   canRetry = false,
   canBranch = false,
@@ -63,6 +65,7 @@ export function MessageBubble({
   onSwitchSibling,
 }: MessageBubbleProps) {
   const [isCopied, setIsCopied] = useState(false)
+  const isPendingResponse = role === 'assistant' && isStreaming && !content.trim()
 
   const handleCopy = async () => {
     try {
@@ -188,11 +191,22 @@ export function MessageBubble({
           <h2 className="message-row__author">{author}</h2>
           
           <div className="message-row__content-wrapper">
-            <div 
-              className="message-row__content" 
-              onClick={handleContentClick}
-              dangerouslySetInnerHTML={{ __html: htmlContent }} 
-            />
+            {isPendingResponse ? (
+              <div className="message-row__content message-typing" role="status" aria-live="polite">
+                <span className="message-typing__label">Preparando respuesta</span>
+                <span className="message-typing__dots" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              </div>
+            ) : (
+              <div 
+                className="message-row__content" 
+                onClick={handleContentClick}
+                dangerouslySetInnerHTML={{ __html: htmlContent }} 
+              />
+            )}
           </div>
 
           <div className="message-row__actions-container">

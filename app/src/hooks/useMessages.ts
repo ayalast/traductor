@@ -18,17 +18,23 @@ type UseMessagesResult = {
   messages: MessageRecord[]
   isLoading: boolean
   error: string | null
-  refresh: (overrideId?: string | null) => Promise<void>
+  refresh: (overrideId?: string | null, options?: { silent?: boolean }) => Promise<void>
 }
 
-export function useMessages(conversationId: string | null, enabled = true): UseMessagesResult {
+export function useMessages(conversationId: string | null, enabled = true, autoRefreshSilently = false): UseMessagesResult {
   const [messages, setMessages] = useState<MessageRecord[]>([])
   const [isLoading, setIsLoading] = useState(Boolean(enabled && conversationId))
   const [error, setError] = useState<string | null>(null)
   const requestIdRef = useRef(0)
+  const autoRefreshSilentlyRef = useRef(autoRefreshSilently)
 
-  const refresh = useCallback(async (overrideId?: string | null) => {
+  useEffect(() => {
+    autoRefreshSilentlyRef.current = autoRefreshSilently
+  }, [autoRefreshSilently])
+
+  const refresh = useCallback(async (overrideId?: string | null, options?: { silent?: boolean }) => {
     const targetId = overrideId !== undefined ? overrideId : conversationId
+    const isSilent = Boolean(options?.silent)
     const requestId = requestIdRef.current + 1
     requestIdRef.current = requestId
 
@@ -39,7 +45,7 @@ export function useMessages(conversationId: string | null, enabled = true): UseM
       return
     }
 
-    setIsLoading(true)
+    if (!isSilent) setIsLoading(true)
     setError(null)
 
     const { data, error: queryError } = await supabase
@@ -53,16 +59,16 @@ export function useMessages(conversationId: string | null, enabled = true): UseM
     if (queryError) {
       setError(queryError.message)
       setMessages([])
-      setIsLoading(false)
+      if (!isSilent) setIsLoading(false)
       return
     }
 
     setMessages((data ?? []) as MessageRecord[])
-    setIsLoading(false)
+    if (!isSilent) setIsLoading(false)
   }, [conversationId, enabled])
 
   useEffect(() => {
-    void refresh()
+    void refresh(undefined, { silent: autoRefreshSilentlyRef.current })
   }, [refresh])
 
   return {

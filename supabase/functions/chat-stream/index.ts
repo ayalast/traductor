@@ -5,6 +5,29 @@ import { requireUser } from '../_shared/auth.ts'
 import { decryptSecret } from '../_shared/crypto.ts'
 import { PROVIDERS } from '../_shared/providers.ts'
 
+const CACHE_TTL_MS = 2 * 60 * 1000
+const presetCache = new Map()
+const providerKeyCache = new Map()
+
+function getCache(cache, key) {
+  const entry = cache.get(key)
+  if (!entry) return null
+
+  if (entry.expiresAt < Date.now()) {
+    cache.delete(key)
+    return null
+  }
+
+  return entry.value
+}
+
+function setCache(cache, key, value, ttl = CACHE_TTL_MS) {
+  cache.set(key, {
+    value,
+    expiresAt: Date.now() + ttl,
+  })
+}
+
 function createTitleFromInput(input: string) {
   const normalized = input.replace(/\s+/g, ' ').trim()
   if (!normalized) return 'Nuevo chat'
@@ -14,6 +37,22 @@ function createTitleFromInput(input: string) {
 function encodeSse(event: string, data: Record<string, unknown>) {
   const encoder = new TextEncoder()
   return encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+}
+
+function getClientHistory(payload) {
+  if (!Array.isArray(payload.clientHistory)) return null
+
+  return payload.clientHistory
+    .filter((message) =>
+      (message?.role === 'user' || message?.role === 'assistant') &&
+      typeof message?.content === 'string' &&
+      message.content.trim()
+    )
+    .slice(-24)
+    .map((message) => ({
+      role: message.role,
+      content: message.content.slice(0, 12000),
+    }))
 }
 
 async function getConversationContext(client, conversationId, options = {}) {
@@ -256,6 +295,16 @@ async function resolvePresetAndNotes(client, userId, requestedPresetId) {
   }
 }
 
+async function resolvePresetAndNotesCached(client, userId, requestedPresetId) {
+  const cacheKey = `${userId}:${requestedPresetId || 'active'}`
+  const cached = getCache(presetCache, cacheKey)
+  if (cached) return cached
+
+  const resolved = await resolvePresetAndNotes(client, userId, requestedPresetId)
+  setCache(presetCache, cacheKey, resolved)
+  return resolved
+}
+
 async function resolveConversation(client, userId, payload, presetId) {
   if (payload.conversationId) {
     const { data: conversation, error } = await client
@@ -315,6 +364,16 @@ async function getProviderKey(client, userId, provider) {
   return decryptSecret(data.encrypted_key, data.iv)
 }
 
+async function getProviderKeyCached(client, userId, provider) {
+  const cacheKey = `${userId}:${provider}`
+  const cached = getCache(providerKeyCache, cacheKey)
+  if (cached) return cached
+
+  const apiKey = await getProviderKey(client, userId, provider)
+  setCache(providerKeyCache, cacheKey, apiKey)
+  return apiKey
+}
+
 async function updateConversationMetadata(client, conversationId, payload, presetId, titleFallback) {
   const updates = {
     provider: payload.provider,
@@ -332,6 +391,40 @@ async function updateConversationMetadata(client, conversationId, payload, prese
 
   if (error) {
     throw new Error(`No se pudo actualizar la conversación: ${error.message}`)
+  }
+}
+
+async function persistNewMessageResult(client, userId, payload, presetId, finalText) {
+  const conversation = await resolveConversation(client, userId, payload, presetId)
+  const conversationId = conversation.id
+  const parentMessageId = payload.parentMessageId || null
+  const titleFallback = !payload.conversationId ? createTitleFromInput(payload.input) : null
+
+  const userMessage = await insertUserMessage(
+    client,
+    userId,
+    conversationId,
+    payload.input.trim(),
+    parentMessageId,
+    payload.targetTurnIndex ?? null,
+  )
+  const reasoningSummary = extractReasoningSummary(finalText)
+  const messageId = await insertAssistantMessage(
+    client,
+    userId,
+    conversationId,
+    userMessage.turn_index,
+    finalText,
+    userMessage.id,
+    reasoningSummary,
+  )
+
+  await updateConversationMetadata(client, conversationId, payload, presetId, titleFallback)
+
+  return {
+    conversationId,
+    messageId,
+    userMessageId: userMessage.id,
   }
 }
 
@@ -440,6 +533,22 @@ Deno.serve(async (request) => {
 
     const mode = payload.mode || 'new'
 
+    if (payload.intent === 'prewarm') {
+      if (!payload?.provider || !PROVIDERS[payload.provider]) {
+        return errorResponse('El provider enviado no es válido.', 400)
+      }
+
+      await Promise.all([
+        resolvePresetAndNotesCached(client, user.id, payload.presetId),
+        getProviderKeyCached(client, user.id, payload.provider),
+      ])
+
+      return new Response(null, {
+        status: 204,
+        headers: corsHeaders,
+      })
+    }
+
     if (mode === 'new' || mode === 'edit') {
       if (!payload?.input?.trim?.()) {
         return errorResponse('El campo input es obligatorio para este modo.', 400)
@@ -450,10 +559,65 @@ Deno.serve(async (request) => {
       return errorResponse('conversationId es obligatorio para edit y retry.', 400)
     }
 
-    const { presetId, systemPrompt } = await resolvePresetAndNotes(client, user.id, payload.presetId)
+    const [{ presetId, systemPrompt }, providerKey] = await Promise.all([
+      resolvePresetAndNotesCached(client, user.id, payload.presetId),
+      getProviderKeyCached(client, user.id, payload.provider),
+    ])
+    const clientHistory = mode === 'new' ? getClientHistory(payload) : null
+
+    if (mode === 'new' && clientHistory) {
+      const llmMessages = [
+        { role: 'system', content: systemPrompt },
+        ...clientHistory,
+        { role: 'user', content: payload.input.trim() },
+      ]
+
+      const stream = new ReadableStream({
+        async start(controller) {
+          try {
+            if (payload.conversationId) {
+              controller.enqueue(encodeSse('conversation', { conversationId: payload.conversationId }))
+            }
+
+            const finalText = await callProviderWithStreaming({
+              provider: payload.provider,
+              apiKey: providerKey,
+              model: payload.model,
+              temperature: payload.temperature,
+              messages: llmMessages,
+              onDelta: (text) => {
+                controller.enqueue(encodeSse('delta', { text }))
+              },
+            })
+
+            const safeFinalText = finalText || 'Sin respuesta del modelo.'
+            const persisted = await persistNewMessageResult(client, user.id, payload, presetId, safeFinalText)
+
+            controller.enqueue(encodeSse('done', persisted))
+            controller.close()
+          } catch (error) {
+            controller.enqueue(
+              encodeSse('error', {
+                message: error instanceof Error ? error.message : 'Error interno durante el streaming.',
+              }),
+            )
+            controller.close()
+          }
+        },
+      })
+
+      return new Response(stream, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        },
+      })
+    }
+
     const conversation = await resolveConversation(client, user.id, payload, presetId)
     const conversationId = conversation.id
-    const providerKey = await getProviderKey(client, user.id, payload.provider)
     const titleFallback = !payload.conversationId && mode === 'new' ? createTitleFromInput(payload.input) : null
 
     await updateConversationMetadata(client, conversationId, payload, presetId, titleFallback)

@@ -7,6 +7,7 @@ type ChatMessage = {
   author: string
   content: string
   reasoning?: string
+  isStreaming?: boolean
 }
 
 type ChatViewProps = {

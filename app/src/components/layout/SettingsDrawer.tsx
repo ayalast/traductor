@@ -14,6 +14,7 @@ import {
   setPaperTextureSettings,
 } from '../../lib/themes'
 import packageJson from '../../../package.json'
+import { VOCABULARY_LEVELS, setStoredVocabularyLevel, type VocabularyLevel } from '../../lib/vocabulary'
 
 type SettingsDrawerProps = {
   isOpen: boolean
@@ -21,6 +22,8 @@ type SettingsDrawerProps = {
   activeProvider: ProviderId
   activeTemperature: number
   onTemperatureChange: (temp: number) => void
+  vocabularyLevel: VocabularyLevel
+  onVocabularyLevelChange: (level: VocabularyLevel) => void
   children?: ReactNode
   dangerZone?: ReactNode
 }
@@ -30,6 +33,8 @@ export function SettingsDrawer({
   onClose,
   activeTemperature,
   onTemperatureChange,
+  vocabularyLevel,
+  onVocabularyLevelChange,
   children,
   dangerZone,
 }: SettingsDrawerProps) {
@@ -50,6 +55,11 @@ export function SettingsDrawer({
   const handleTemperatureChange = (value: number) => {
     setTempValue(value)
     onTemperatureChange(value)
+  }
+
+  const handleVocabularyLevelChange = (level: VocabularyLevel) => {
+    setStoredVocabularyLevel(level)
+    onVocabularyLevelChange(level)
   }
 
   const handleThemeChange = (themeId: ThemeId) => {
@@ -141,6 +151,31 @@ export function SettingsDrawer({
                   <p>{theme.description}</p>
                 </button>
               ))}
+            </div>
+          </section>
+
+          <section className="settings-section">
+            <h3 className="eyebrow">📚 Práctica de vocabulario</h3>
+            <div className="settings-drawer__control-card">
+              <div className="settings-drawer__control-row">
+                <span>Nivel de palabras sugeridas</span>
+                <strong>{vocabularyLevel}</strong>
+              </div>
+              <div className="vocabulary-level-grid">
+                {(Object.entries(VOCABULARY_LEVELS) as [VocabularyLevel, typeof VOCABULARY_LEVELS[VocabularyLevel]][]).map(([levelId, level]) => (
+                  <button
+                    key={levelId}
+                    type="button"
+                    className={`vocabulary-level-card${vocabularyLevel === levelId ? ' active' : ''}`}
+                    onClick={() => handleVocabularyLevelChange(levelId)}
+                  >
+                    <span>{level.icon}</span>
+                    <strong>{levelId}</strong>
+                    <small>{level.label}</small>
+                  </button>
+                ))}
+              </div>
+              <p className="settings-drawer__hint">Las palabras se mezclan localmente en cada entrada para mantener la pantalla principal rápida.</p>
             </div>
           </section>
 

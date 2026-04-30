@@ -7,6 +7,7 @@ type MessageItem = {
   author: string
   content: string
   reasoning?: string
+  isStreaming?: boolean
   turnIndex?: number
   siblingIdx?: number
   siblingCount?: number
@@ -82,6 +83,7 @@ export function MessageList({
               author={message.author}
               content={message.content}
               reasoning={message.reasoning}
+              isStreaming={message.isStreaming}
               canEdit={getCanEdit?.(message) ?? false}
               canRetry={getCanRetry?.(message) ?? false}
               canBranch={getCanBranch?.(message) ?? false}

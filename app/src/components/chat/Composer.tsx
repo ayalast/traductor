@@ -62,16 +62,14 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(
               }}
             />
             
-            <div className="composer__actions-row">
-              <div className="composer__left-actions">
-                {value.length > 0 && (
-                  <span className="char-count">{value.length} caracteres</span>
-                )}
-              </div>
+              <div className="composer__actions-row">
+              <div className="composer__left-actions" />
               <div className="composer__right-actions">
                 {isSending ? (
                   <button type="button" className="stop-btn" onClick={onStop} title="Detener">
-                    ⬜
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <rect x="6" y="6" width="12" height="12" rx="2" />
+                    </svg>
                   </button>
                 ) : (
                   <button 
@@ -80,8 +78,15 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(
                     onClick={onSubmit} 
                     disabled={!canSubmit}
                     title="Enviar"
+                    aria-label="Enviar mensaje"
                   >
-                    {isEditMode ? '↻' : '↑'}
+                    {isEditMode ? (
+                      '↻'
+                    ) : (
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M3.5 20.5 22 12 3.5 3.5 6.2 10.7 14 12l-7.8 1.3-2.7 7.2Z" />
+                      </svg>
+                    )}
                   </button>
                 )}
               </div>

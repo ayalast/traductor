@@ -8,7 +8,7 @@ import { AppShell } from '../components/layout/AppShell'
 import { Sidebar } from '../components/layout/Sidebar'
 import { Topbar } from '../components/layout/Topbar'
 import { branchConversation } from '../features/branch-conversation'
-import { streamChatMessage } from '../features/send-message'
+import { prewarmChatStream, streamChatMessage } from '../features/send-message'
 import { useAuth } from '../hooks/useAuth'
 import { useConversations } from '../hooks/useConversations'
 import { useMessages, type MessageRecord } from '../hooks/useMessages'
@@ -17,6 +17,7 @@ import { useProviderCatalog } from '../hooks/useProviderCatalog'
 import { useProviderCredentials } from '../hooks/useProviderCredentials'
 import { useUserPreferences } from '../hooks/useUserPreferences'
 import { PROVIDERS } from '../lib/providers'
+import { getStoredVocabularyLevel, type VocabularyLevel } from '../lib/vocabulary'
 import { LoadingState } from '../components/common'
 
 const SettingsDrawer = lazy(() => import('../components/layout/SettingsDrawer').then(m => ({ default: m.SettingsDrawer })))
@@ -37,6 +38,7 @@ type DisplayMessage = {
   createdAt?: string
   siblingIdx?: number
   siblingCount?: number
+  isStreaming?: boolean
 }
 
 type EditTarget = {
@@ -83,7 +85,7 @@ function isInteractiveTarget(target: EventTarget | null) {
 }
 
 export function ChatPage() {
-  const { user, isAuthenticated, isLoading, signOut } = useAuth()
+  const { user, session, isAuthenticated, isLoading, signOut } = useAuth()
   
   // 1. Estados básicos
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
@@ -100,12 +102,15 @@ export function ChatPage() {
   const [isCopiedTranscript, setIsCopiedTranscript] = useState(false)
   const [isShareCopied, setIsShareCopied] = useState(false)
   const [isConfirmingDeleteAll, setIsConfirmingDeleteAll] = useState(false)
+  const [isPostSendSyncing, setIsPostSendSyncing] = useState(false)
   const [activeSiblings, setActiveSiblings] = useState<Record<string, string>>({})
+  const [vocabularyLevel, setVocabularyLevel] = useState<VocabularyLevel>(getStoredVocabularyLevel)
 
   const chatThreadRef = useRef<HTMLDivElement>(null)
   const composerRef = useRef<HTMLTextAreaElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const hasMobileComposerFocusAttemptRef = useRef(false)
+  const prewarmKeyRef = useRef('')
 
   // 2. Hooks de datos
   const {
@@ -143,7 +148,7 @@ export function ChatPage() {
     messages,
     isLoading: messagesLoading,
     refresh: refreshMessages,
-  } = useMessages(activeConversationId, isAuthenticated)
+  } = useMessages(activeConversationId, isAuthenticated, isPostSendSyncing)
 
   // 3. Lógica de Branching (useMemo) - DESPUÉS de que messages esté disponible
   const { allMessagesById, siblingsByParent } = useMemo(() => {
@@ -285,7 +290,29 @@ export function ChatPage() {
   }, [activeConversationId, isStartingNewChat])
 
   useEffect(() => {
-    if (isSending || isStartingNewChat) return
+    if (!isAuthenticated || !session?.access_token || !activePresetId) return
+
+    const prewarmKey = `${activeProvider}:${activePresetId}`
+    if (prewarmKeyRef.current === prewarmKey) return
+
+    prewarmKeyRef.current = prewarmKey
+    const controller = new AbortController()
+    const timer = window.setTimeout(() => {
+      void prewarmChatStream(
+        { provider: activeProvider, presetId: activePresetId },
+        session.access_token,
+        controller.signal,
+      )
+    }, 350)
+
+    return () => {
+      window.clearTimeout(timer)
+      controller.abort()
+    }
+  }, [activeProvider, activePresetId, isAuthenticated, session?.access_token])
+
+  useEffect(() => {
+    if (isSending || isStartingNewChat || isPostSendSyncing || optimisticMessages.length) return
 
     if (!conversations.length) {
       setActiveConversationId(null)
@@ -295,7 +322,7 @@ export function ChatPage() {
     if (!activeConversationId || !isUuidLike(activeConversationId)) {
       setActiveConversationId(conversations[0].id)
     }
-  }, [conversations, isStartingNewChat, isSending, activeConversationId])
+  }, [conversations, isStartingNewChat, isSending, isPostSendSyncing, optimisticMessages.length, activeConversationId])
 
   const activeMessages: DisplayMessage[] = isAuthenticated
     ? optimisticMessages.length > 0
@@ -323,11 +350,11 @@ export function ChatPage() {
 
     setActiveConversationId(id)
     setIsStartingNewChat(false)
-    setStreamError(null)
-    setOptimisticMessages([])
-    setEditTarget(null)
-    setActiveSiblings({})
-    void refreshMessages(id)
+      setStreamError(null)
+      setOptimisticMessages([])
+      setEditTarget(null)
+      setActiveSiblings({})
+      void refreshMessages(id)
 
     if (closeSidebar) setIsSidebarOpen(false)
   }
@@ -349,13 +376,15 @@ export function ChatPage() {
     if (!isAuthenticated || isSending) return
     if ((mode === 'new' || mode === 'edit') && !text) return
 
-    const nextTurnIndex = targetTurnIndex ?? (Math.floor(persistedMessages.length / 2) + 1)
+    const requestBaseMessages = optimisticMessages.length > 0 ? activeMessages : persistedMessages
+    const nextTurnIndex = targetTurnIndex ?? (Math.floor(requestBaseMessages.length / 2) + 1)
     const temporaryAssistantMessage: DisplayMessage = {
       id: `temp-assistant-${Date.now()}`,
       role: 'assistant',
       author: 'Mi Traductor',
       content: '',
       turnIndex: nextTurnIndex,
+      isStreaming: true,
     }
     const temporaryUserMessage: DisplayMessage | null = (mode === 'new' || mode === 'edit') ? {
       id: `temp-user-${Date.now()}`,
@@ -388,14 +417,22 @@ export function ChatPage() {
     const abortController = new AbortController()
     abortControllerRef.current = abortController
     let nextConversationId: string | null = activeConversationId
+    const clientHistory = mode === 'new'
+      ? requestBaseMessages
+          .filter((message) => message.content.trim())
+          .slice(-24)
+          .map((message) => ({ role: message.role, content: message.content }))
+      : undefined
+    const shouldRestoreComposerFocus = !isMobileViewport() || document.activeElement === composerRef.current
 
     try {
       let parentMessageId = null
       if (mode !== 'new') {
         const target = allMessagesById[targetMessageId!]
         parentMessageId = target?.parent_message_id
-      } else if (persistedMessages.length > 0) {
-        parentMessageId = persistedMessages[persistedMessages.length - 1].id
+      } else {
+        const lastPersistedMessage = [...requestBaseMessages].reverse().find((message) => isUuidLike(message.id))
+        parentMessageId = lastPersistedMessage?.id ?? null
       }
 
       await streamChatMessage(
@@ -410,6 +447,7 @@ export function ChatPage() {
           targetTurnIndex,
           parentMessageId,
           targetMessageId,
+          clientHistory,
         },
         {
           onConversation: async (conversationId) => {
@@ -432,12 +470,36 @@ export function ChatPage() {
             setOptimisticMessages((current) => {
               if (!current.length) return current
               const next = [...current]
-              next[next.length - 1] = { ...next[next.length - 1], content: partialText }
+              next[next.length - 1] = { ...next[next.length - 1], content: partialText, isStreaming: true }
               return next
             })
           },
           onDone: ({ messageId, conversationId: cid, userMessageId }) => {
-            if (cid && isUuidLike(cid)) setActiveConversationId(cid)
+            if (cid && isUuidLike(cid)) {
+              nextConversationId = cid
+              setIsPostSendSyncing(true)
+              setActiveConversationId(cid)
+              setIsStartingNewChat(false)
+            }
+
+            setOptimisticMessages((current) => current.map((message) => {
+              if (message.id === temporaryAssistantMessage.id) {
+                return {
+                  ...message,
+                  id: messageId || message.id,
+                  isStreaming: false,
+                }
+              }
+
+              if (temporaryUserMessage && message.id === temporaryUserMessage.id) {
+                return {
+                  ...message,
+                  id: userMessageId || message.id,
+                }
+              }
+
+              return message
+            }))
             
             if (messageId) {
               setActiveSiblings(prev => {
@@ -465,6 +527,7 @@ export function ChatPage() {
           onError: (msg) => setStreamError(msg),
         },
         abortController.signal,
+        session?.access_token,
       )
     } catch (error) {
       if (!(error instanceof DOMException && error.name === 'AbortError')) {
@@ -472,12 +535,25 @@ export function ChatPage() {
       }
     } finally {
       abortControllerRef.current = null
-      await refreshConversations()
+      setIsPostSendSyncing(true)
       if (nextConversationId) setActiveConversationId(nextConversationId)
-      await refreshMessages(nextConversationId)
       setIsSending(false)
-      setOptimisticMessages([])
       setEditTarget(null)
+      if (shouldRestoreComposerFocus) {
+        requestAnimationFrame(() => composerRef.current?.focus({ preventScroll: true }))
+      }
+
+      void Promise.all([
+        refreshConversations(),
+        refreshMessages(nextConversationId, { silent: true }),
+      ])
+        .then(() => {
+          setIsPostSendSyncing(false)
+        })
+        .catch((error) => {
+          console.error('Post-send sync error:', error)
+          setIsPostSendSyncing(false)
+        })
     }
   }
 
@@ -691,7 +767,7 @@ export function ChatPage() {
           <strong>Error:</strong> {streamError}
         </div>
       )}
-      {messagesLoading && !optimisticMessages.length ? <LoadingState message="Cargando..." /> :
+      {messagesLoading && !optimisticMessages.length && !isPostSendSyncing ? <LoadingState message="Cargando..." /> :
        activeMessages.length ? (
         <Suspense fallback={<LoadingState message="Preparando conversación..." />}>
           <ChatView
@@ -706,7 +782,7 @@ export function ChatPage() {
             containerRef={chatThreadRef}
           />
         </Suspense>
-       ) : <WelcomePanel onQuickPrompt={text => handleSendMessage('new', undefined, text)} />}
+        ) : <WelcomePanel vocabularyLevel={vocabularyLevel} onQuickPrompt={text => handleSendMessage('new', undefined, text)} />}
       
       {showScrollButton && <button className="scroll-bottom-btn" onClick={() => chatThreadRef.current && (chatThreadRef.current.scrollTop = chatThreadRef.current.scrollHeight)}>↓</button>}
     </div>
@@ -722,7 +798,7 @@ export function ChatPage() {
       onStop={() => abortControllerRef.current?.abort()}
       onCancelEdit={editTarget ? () => setEditTarget(null) : undefined}
       isSending={isSending}
-      disabled={messagesLoading}
+      disabled={messagesLoading && !optimisticMessages.length && !isPostSendSyncing}
       isEditMode={!!editTarget}
     />
   ) : (
@@ -742,7 +818,16 @@ export function ChatPage() {
       <AppShell sidebar={sidebar} header={header} content={content} composer={composer} isSidebarOpen={isSidebarOpen} onCloseSidebar={() => setIsSidebarOpen(false)} />
       {isSettingsOpen && (
         <Suspense fallback={null}>
-          <SettingsDrawer isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} activeProvider={activeProvider} activeTemperature={activeTemperature} onTemperatureChange={handleTemperatureChange} dangerZone={dangerZone}>
+          <SettingsDrawer
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            activeProvider={activeProvider}
+            activeTemperature={activeTemperature}
+            onTemperatureChange={handleTemperatureChange}
+            vocabularyLevel={vocabularyLevel}
+            onVocabularyLevelChange={setVocabularyLevel}
+            dangerZone={dangerZone}
+          >
             <ProviderSelect activeProvider={activeProvider} onUpdate={() => refreshPreferences()} />
             <ModelCombobox activeProvider={activeProvider} activeModel={activeModel} models={models} isLoading={modelsLoading} error={modelsError} onUpdate={() => refreshPreferences()} />
             <ProviderKeysPanel credentials={credentials} onRefresh={() => { refreshCredentials(); refreshModels(); }} />
