@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 
 import { GoogleLoginButton } from '../components/auth/GoogleLoginButton'
 import { Composer } from '../components/chat/Composer'
@@ -72,9 +72,14 @@ function isUuidLike(value: string | null | undefined) {
 }
 
 const mobileSidebarQuery = '(max-width: 768px)'
+const interactiveTargetSelector = 'button, a, input, textarea, select, summary, [contenteditable="true"], [role="button"]'
 
 function isMobileViewport() {
   return window.matchMedia(mobileSidebarQuery).matches
+}
+
+function isInteractiveTarget(target: EventTarget | null) {
+  return target instanceof Element && Boolean(target.closest(interactiveTargetSelector))
 }
 
 export function ChatPage() {
@@ -98,6 +103,7 @@ export function ChatPage() {
   const chatThreadRef = useRef<HTMLDivElement>(null)
   const composerRef = useRef<HTMLTextAreaElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const hasMobileComposerFocusAttemptRef = useRef(false)
 
   // 2. Hooks de datos
   const {
@@ -322,6 +328,17 @@ export function ChatPage() {
     void refreshMessages(id)
 
     if (closeSidebar) setIsSidebarOpen(false)
+  }
+
+  const handleMobileChatClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (!isAuthenticated || !isMobileViewport() || hasMobileComposerFocusAttemptRef.current) return
+    if (isSidebarOpen || isSettingsOpen || isInteractiveTarget(event.target)) return
+
+    const composerElement = composerRef.current
+    if (!composerElement || composerElement.disabled) return
+
+    hasMobileComposerFocusAttemptRef.current = true
+    composerElement.focus({ preventScroll: true })
   }
 
   const handleSendMessage = async (mode: 'new' | 'edit' | 'retry' = 'new', targetTurnIndex?: number, overrideText?: string, targetMessageId?: string) => {
@@ -581,9 +598,15 @@ export function ChatPage() {
         </div>
       }
       search={
-        <div className="sidebar__search" style={{ position: 'relative' }}>
-          <input type="text" placeholder="Buscar..." value={conversationSearch} onChange={e => setConversationSearch(e.target.value)} />
-          {conversationSearch && <button onClick={() => setConversationSearch('')} style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer' }}>✕</button>}
+        <div className="sidebar__search">
+          <div className="sidebar__search-field">
+            <input type="text" placeholder="Buscar..." value={conversationSearch} onChange={e => setConversationSearch(e.target.value)} />
+            {conversationSearch && (
+              <button className="sidebar__search-clear" type="button" onClick={() => setConversationSearch('')} aria-label="Limpiar búsqueda">
+                ✕
+              </button>
+            )}
+          </div>
         </div>
       }
       conversations={
@@ -651,7 +674,7 @@ export function ChatPage() {
   )
 
   const content = (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', height: '100%', minHeight: 0 }}>
+    <div onClickCapture={handleMobileChatClick} style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', height: '100%', minHeight: 0 }}>
       {streamError && (
         <div style={{ padding: '1rem', background: 'var(--bubble-user)', color: '#ef4444', borderBottom: '1px solid var(--border)', textAlign: 'center', fontSize: '0.9rem' }}>
           <strong>Error:</strong> {streamError}
