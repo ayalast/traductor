@@ -38,6 +38,7 @@ export function GoogleLoginButton({ disabled = false }: GoogleLoginButtonProps) 
           <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z" />
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06L5.84 9.9C6.71 7.3 9.14 5.38 12 5.38z" />
         </svg>
+        <span>{isSubmitting ? 'Redirigiendo...' : 'Continuar con Google'}</span>
         {isSubmitting && <span className="google-auth-btn__spinner" aria-hidden="true" />}
       </button>
       {error ? <p className="google-auth__error">{error}</p> : null}
