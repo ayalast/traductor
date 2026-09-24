@@ -6,3 +6,4 @@ dist/
 .vite/
 app/.vite/
 roo-code-settings.json
+.wrangler/
