@@ -215,6 +215,7 @@ Si alguno de esos pasos falla, el release no debe considerarse cerrado.
 ## Soporte
 
 Para problemas o preguntas, revisa:
+- [`plans/PLAN_REARQUITECTURA_V2.md`](plans/PLAN_REARQUITECTURA_V2.md) - Auditoría profunda y plan de re-arquitectura v2 (2026-09)
 - [`plans/plan-maestro-release.md`](plans/plan-maestro-release.md:1) - Guía principal vigente
 - [`plans/release-checklist.md`](plans/release-checklist.md:1) - Checklist operativo de release
 - [`plans/optimizacion-carga-inicial.md`](plans/optimizacion-carga-inicial.md:1) - Plan vigente para optimizar carga inicial
