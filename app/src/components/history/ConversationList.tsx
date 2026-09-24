@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useState } from 'react'
 
 type Conversation = {
   id: string
@@ -13,8 +13,8 @@ type ConversationListProps = {
   onSelectConversation?: (conversationId: string) => void
   onDeleteConversation?: (conversationId: string) => void
   onRenameConversation?: (conversationId: string, newTitle: string) => void
-  onOpenConversation?: (conversationId: string) => void
   searchQuery?: string
+  emptyMessage?: string
 }
 
 function escapeRegExp(value: string) {
@@ -26,13 +26,12 @@ export function ConversationList({
   onSelectConversation, 
   onDeleteConversation,
   onRenameConversation,
-  onOpenConversation,
-  searchQuery = ''
+  searchQuery = '',
+  emptyMessage = 'Aún no hay conversaciones. Inicia un chat para crear la primera.',
 }: ConversationListProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
-  const lastTapRef = useRef<{ id: string; time: number }>({ id: '', time: 0 })
 
   const highlightText = (text: string, query: string) => {
     const trimmedQuery = query.trim()
@@ -97,16 +96,8 @@ export function ConversationList({
     setEditingId(null)
   }
 
-  const handleSelectConversation = (id: string, event: React.MouseEvent | React.KeyboardEvent) => {
-    const now = event.timeStamp
-    const isQuickSecondTap = lastTapRef.current.id === id && now - lastTapRef.current.time < 360
-
-    lastTapRef.current = { id, time: now }
+  const handleSelectConversation = (id: string) => {
     onSelectConversation?.(id)
-
-    if (isQuickSecondTap) {
-      onOpenConversation?.(id)
-    }
   }
 
   const handleConversationKeyDown = (event: React.KeyboardEvent, id: string) => {
@@ -114,12 +105,17 @@ export function ConversationList({
     if (event.key !== 'Enter' && event.key !== ' ') return
 
     event.preventDefault()
-    handleSelectConversation(id, event)
+    handleSelectConversation(id)
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <nav className="conversation-list" aria-label="Historial de conversaciones" style={{ flex: 1 }}>
+        {conversations.length === 0 && (
+          <p className="conversation-list__empty">
+            {searchQuery.trim() ? 'No se encontraron conversaciones.' : emptyMessage}
+          </p>
+        )}
         {order.map(label => {
           const items = grouped[label]
           if (!items || items.length === 0) return null
@@ -143,7 +139,7 @@ export function ConversationList({
                       className="conversation-item"
                       role="button"
                       tabIndex={0}
-                      onClick={(event) => handleSelectConversation(conversation.id, event)}
+                      onClick={() => handleSelectConversation(conversation.id)}
                       onKeyDown={(event) => handleConversationKeyDown(event, conversation.id)}
                     >
                       <span className="conversation-item__icon">💬</span>

@@ -100,7 +100,6 @@ export function ChatPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobileViewport())
   const [showScrollButton, setShowScrollButton] = useState(false)
   const [isCopiedTranscript, setIsCopiedTranscript] = useState(false)
-  const [isShareCopied, setIsShareCopied] = useState(false)
   const [isConfirmingDeleteAll, setIsConfirmingDeleteAll] = useState(false)
   const [isPostSendSyncing, setIsPostSendSyncing] = useState(false)
   const [activeSiblings, setActiveSiblings] = useState<Record<string, string>>({})
@@ -211,19 +210,8 @@ export function ChatPage() {
       }))
     }
     
-    if (conversations.length === 0) {
-      return [
-        {
-          id: 'placeholder-chat',
-          title: 'Traducir expresiones cotidianas',
-          updated_at: new Date().toISOString(),
-          active: true,
-        },
-      ]
-    }
-    
     return []
-  }, [filteredConversations, conversations, activeConversationId])
+  }, [filteredConversations, activeConversationId])
 
   const persistedMessages: DisplayMessage[] = useMemo(() => {
     return activePath
@@ -608,12 +596,6 @@ export function ChatPage() {
     } catch { setStreamError('Error al crear rama.') }
   }
 
-  const handleShare = async () => {
-    await navigator.clipboard.writeText(window.location.href)
-    setIsShareCopied(true)
-    setTimeout(() => setIsShareCopied(false), 2000)
-  }
-
   const handleCopyConversation = async () => {
     const transcript = activeMessages.map(m => `${m.role === 'user' ? 'Tú' : 'IA'}:\n${m.content}`).join('\n\n---\n\n')
     await navigator.clipboard.writeText(transcript)
@@ -681,7 +663,7 @@ export function ChatPage() {
             </button>
           </div>
           <h1>Workspace</h1>
-          <button className="primary-btn" type="button" onClick={handleNewChat}>Nuevo chat</button>
+          {isAuthenticated && <button className="primary-btn" type="button" onClick={handleNewChat}>Nuevo chat</button>}
         </div>
       }
       search={
@@ -700,8 +682,8 @@ export function ChatPage() {
         conversationsLoading ? <LoadingState message="Cargando..." size="small" /> :
         <ConversationList
           conversations={conversationItems}
-          onSelectConversation={id => handleSelectConversation(id)}
-          onOpenConversation={id => handleSelectConversation(id, true)}
+          emptyMessage={isAuthenticated ? undefined : 'Inicia sesión con Google para guardar tus conversaciones.'}
+          onSelectConversation={id => handleSelectConversation(id, isMobileViewport())}
           onDeleteConversation={handleDeleteConversation}
           onRenameConversation={async (id, title) => {
             const { supabase: sb } = await import('../lib/supabase')
@@ -746,15 +728,14 @@ export function ChatPage() {
           <button className="model-selector-btn" onClick={() => setIsSettingsOpen(true)}>
             {activeProvider.toUpperCase()} · {activeModel} ▼
           </button>
-          <button className="new-chat-mobile-btn" onClick={handleNewChat}>➕</button>
+          {isAuthenticated && <button className="new-chat-mobile-btn" onClick={handleNewChat} aria-label="Nuevo chat">➕</button>}
           </div>
         </>
       }
       actions={
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button onClick={handleCopyConversation} className="topbar-action-btn">{isCopiedTranscript ? '✅' : '📋'}</button>
-          <button onClick={handleShare} className="topbar-action-btn">{isShareCopied ? '✅' : '🔗'}</button>
-          <button onClick={() => setIsSettingsOpen(true)} className="topbar-action-btn">⚙️</button>
+          <button onClick={handleCopyConversation} className="topbar-action-btn" aria-label="Copiar conversación">{isCopiedTranscript ? '✅' : '📋'}</button>
+          <button onClick={() => setIsSettingsOpen(true)} className="topbar-action-btn" aria-label="Configuración">⚙️</button>
         </div>
       }
     />
@@ -762,6 +743,7 @@ export function ChatPage() {
 
   const content = (
     <div onClickCapture={handleMobileChatClick} style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', height: '100%', minHeight: 0 }}>
+      {!isAuthenticated && <div className="chat-demo-notice" role="status">Ejemplo de conversación. Inicia sesión con Google para crear tus propios chats.</div>}
       {streamError && (
         <div style={{ padding: '1rem', background: 'var(--error-bg)', color: 'var(--error-text)', borderBottom: '1px solid var(--error-border)', textAlign: 'center', fontSize: '0.9rem' }}>
           <strong>Error:</strong> {streamError}
@@ -776,9 +758,9 @@ export function ChatPage() {
             onRetryMessage={handleRetryMessage}
             onBranchMessage={handleBranchMessage}
             onSwitchSibling={(id, idx) => handleSwitchSibling(allMessagesById[id]?.parent_message_id || null, idx)}
-            getCanEdit={m => m.role === 'user' && !isSending}
-            getCanRetry={m => !isSending && (m.role === 'user' || m.id === lastAssistantMessageId)}
-            getCanBranch={m => !isSending && !!m.id}
+            getCanEdit={m => isAuthenticated && m.role === 'user' && !isSending}
+            getCanRetry={m => isAuthenticated && !isSending && (m.role === 'user' || m.id === lastAssistantMessageId)}
+            getCanBranch={m => isAuthenticated && !isSending && !!m.id}
             containerRef={chatThreadRef}
           />
         </Suspense>

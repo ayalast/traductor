@@ -177,6 +177,22 @@ body {
   overflow: hidden;
 }
 
+.conversation-list__empty {
+  padding: 0.75rem 1rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.chat-demo-notice {
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 0.85rem;
+}
+
 .conversation-group__label {
   padding: 1.25rem 0.5rem 0.5rem;
   font-size: 0.7rem;
@@ -901,13 +917,19 @@ body {
 
 .google-auth-btn {
   position: relative;
-  display: grid;
-  width: 2.5rem;
-  height: 2.5rem;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 1rem;
   border: 1px solid color-mix(in srgb, var(--border), #fff 16%);
-  border-radius: 999px;
+  border-radius: 1rem;
   background: #fff;
+  color: #202124;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
   box-shadow: 0 0.65rem 1.4rem rgba(0, 0, 0, 0.22), 0 0 0 0.28rem color-mix(in srgb, var(--surface-elevated), transparent 48%);
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
@@ -930,6 +952,7 @@ body {
 
 .google-icon {
   width: 1.25rem;
+  flex-shrink: 0;
   height: 1.25rem;
 }
 
@@ -1110,7 +1133,7 @@ body {
     right: 0.75rem;
   }
 
-  .topbar__actions .topbar-action-btn:nth-child(-n + 2) {
+  .topbar__actions .topbar-action-btn[aria-label="Copiar conversación"] {
     display: none;
   }
 
@@ -1360,8 +1383,7 @@ body {
   }
 
   .google-auth-btn {
-    width: 2.25rem;
-    height: 2.25rem;
+    min-height: 2.5rem;
     box-shadow: 0 0.55rem 1.1rem rgba(0, 0, 0, 0.22), 0 0 0 0.22rem color-mix(in srgb, var(--surface-elevated), transparent 50%);
   }
 
